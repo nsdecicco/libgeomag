@@ -293,7 +293,6 @@ int main(int argc, char**argv)
   /*  Variable declaration  */
   
   /* Control variables */
-  int   again = 1;
   int   decyears = 3; // What format is the date in?
                       // 2 = not decimal YYYY,MM,DD
                       // 1 = decimal YYYY.XXX
@@ -374,8 +373,6 @@ int main(int argc, char**argv)
       strncpy(out_fname,args[4],MAXREAD);
       outfile=fopen(out_fname, "w");
 
-  while (again == 1)
-    {
           argc = 7;
           read_flag = fscanf(coordfile,"%s%s%s%s%s%*[^\n]",args[2],args[3],args[4],args[5],args[6]);
           if (read_flag == EOF) goto reached_EOF;
@@ -410,7 +407,6 @@ int main(int argc, char**argv)
               strncpy(mdfile,args[1],MAXREAD);
               stream=fopen(mdfile, "rt");
             }
-          break;
       
       /*  Obtain the desired model file and read the data  */
       
@@ -655,20 +651,6 @@ int main(int argc, char**argv)
       /*  Output the final results. */
 
           print_result_file(outfile, d, i, h, x, y, z, f,ddot,idot,hdot,xdot,ydot,zdot,fdot);
-
-        again = !feof(coordfile) && !arg_err;
-
-      if (again == 1)
-        {
-          /* Reset defaults to catch on all while loops */
-          igdgc=decyears=units=-1;
-          ismonth=isday=isyear=sdate=range=step=-1;
-          latitude=200;
-          longitude=200;
-          alt=-9999999;
-          argc = 1;
-        }
-    } /* while (again == 1) */
 
  reached_EOF:
   return 0;
