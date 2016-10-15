@@ -270,6 +270,22 @@ FILE *stream = NULL;                /* Pointer to specified model data file */
 /*                                                                          */
 /****************************************************************************/
 
+void print_dashed_line();
+void print_long_dashed_line(void);
+void print_header();
+void print_result(double date, double d, double i, double h, double x, double y, double z, double f);
+void print_header_sv();
+void print_result_sv(double date, double ddot, double idot, double hdot, double xdot, double ydot, double zdot, double fdot);
+void print_result_file(FILE *outf, double d, double i, double h, double x, double y, double z, double f,
+                       double ddot, double idot, double hdot, double xdot, double ydot, double zdot, double fdot);
+double degrees_to_decimal();
+double julday();
+int   interpsh();
+int   extrapsh();
+int   shval3();
+int   dihf();
+int   safegets(char *buffer,int n);
+int getshc();
 
 int main(int argc, char**argv)
 {
@@ -351,26 +367,6 @@ int main(int argc, char**argv)
   double ydot;
   double zdot;
   double warn_H_val, warn_H_strong_val;
-  
-  /*  Subroutines used  */
-  
-  void print_dashed_line();
-  void print_long_dashed_line(void);
-  void print_header();
-  void print_result(double date, double d, double i, double h, double x, double y, double z, double f);
-  void print_header_sv();
-  void print_result_sv(double date, double ddot, double idot, double hdot, double xdot, double ydot, double zdot, double fdot);
-  void print_result_file(FILE *outf, double d, double i, double h, double x, double y, double z, double f,
-                         double ddot, double idot, double hdot, double xdot, double ydot, double zdot, double fdot);
-  double degrees_to_decimal();
-  double julday();
-  int   interpsh();
-  int   extrapsh();
-  int   shval3();
-  int   dihf();
-  int   safegets(char *buffer,int n);
-  int getshc();
-
 
   /* Initializations. */
   
