@@ -267,7 +267,6 @@ int get_field_components(const double alt,
                          const double sdate,
                          )
 {
-	int counter = 0;
 	int warn_H, warn_H_strong, warn_P;
 	
 	int modelI;       /* Which model (Index) */
@@ -276,22 +275,13 @@ int get_field_components(const double alt,
 	int max2[MAXMOD]; /* Secular variation coefficient. */
 	int max3[MAXMOD]; /* Acceleration coefficient. */
 	int nmax;
-	int   fileline;
 	long  irec_pos[MAXMOD];
 	
-	int arg_err = 0;
-	int need_to_read_model = 1;
 
 	char mdfile[PATH];
 	char inbuff[MAXINBUFF];
 	char model[MAXMOD][9];
-	char *begin;
-	char *rest;
-	char args[7][MAXREAD];
-	int iarg;
 
-	int read_flag;
-	
 	double epoch[MAXMOD];
 	double yrmin[MAXMOD]; /* Min year of model. */
 	double yrmax[MAXMOD]; /* Max year of model. */
@@ -302,8 +292,6 @@ int get_field_components(const double alt,
 	double minAlt;         /* Minimum height of selected model. */
 	double maxAlt;         /* Maximum height of selected model. */
 	double alt=-999999;
-	double step=-1;
-	double syr;
 	double warn_H_val, warn_H_strong_val;
 
 	/* Initializations. */
