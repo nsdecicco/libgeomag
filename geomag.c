@@ -223,6 +223,7 @@ typedef struct {
 	                 geographic north (deg). */
 	double i;    /** Inclination of the field (deg). */
 	double h;    /** */
+	double f;    /** Total field intensity. */
 	double x;    /** */
 	double y;    /** */
 	double z;    /** */
