@@ -113,6 +113,7 @@ int my_isnan(double d)
 	return (d != d);              /* IEEE: only NaN is not equal to itself */
 }
 
+#define EARTH_RADIUS 6371.2
 #define NaN log(-1.0)
 #define FT2KM (1.0/0.0003048)
 #define PI 3.141592654
@@ -324,8 +325,8 @@ int get_field_components(const double alt,
 
 	if (coordSys == kCoordSysGeocentric) {
 		/* Add Earth radius to ranges. */
-		minalt += 6371.2;
-		maxalt += 6371.2;
+		minAlt += EARTH_RADIUS;
+		maxAlt += EARTH_RADIUS;
 	}
 
 	if (coordSys == kCoordSysGeocentric && altUnits != kUnitsKilometers) {
