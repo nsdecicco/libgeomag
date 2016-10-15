@@ -76,8 +76,9 @@ int main()
 
 	for (ii = 0; ii < N_LAT; ii++) {
 		for (ij = 0; ij < N_LON; ij++) {
-			lat[ii] = -90.0f + epsilon + ((double) ii)/(180.0f - epsilon);
-			lon[ij] = -180.0f + ((double) ij)/360.0f;
+			lat[ii] = -90.0 + epsilon +
+			          ((double) ii)/((double) (N_LAT-1))*(180.0 - 2.0*epsilon);
+			lon[ij] = -180.0 + ((double) ij)/((double) (N_LON-1))*360.0;
 			get_field_components(bfield[ii]+ij, &model, alt, kUnitsKilometers,
 			                     kCoordSysGeodetic, lat[ii], lon[ij], date,
 			                     "IGRF12.COF");
