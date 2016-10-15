@@ -225,9 +225,9 @@ int dihf();
 int getshc();
 
 typedef enum {
-	kUnitsKilometers,
-	kUnitsMeters,
-	kUnitsFeet
+	kUnitsKilometers = 1,
+	kUnitsMeters     = 2,
+	kUnitsFeet       = 3
 } Units;
 
 typedef enum {
@@ -267,9 +267,6 @@ int get_field_components(const double alt,
                          const double sdate,
                          )
 {
-	int units = 4; // 1 = kilometers (K),
-	               // 2 = meters (M)
-	               // 3 = feet (F)
 	int counter = 0;
 	int warn_H, warn_H_strong, warn_P;
 	
