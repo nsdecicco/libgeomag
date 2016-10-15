@@ -377,78 +377,16 @@ int main(int argc, char**argv)
     if (argv[iarg] != NULL)
       strncpy(args[iarg],argv[iarg],MAXREAD);
   
-  /* printing out version number and header */
-  printf("\n\n Geomag v7.0 - Jan 25, 2010 ");
-  
-  if ((argc==2)&&((*(args[1])=='h')||(*(args[1])=='?')||(args[1][1]=='?')))
-    {
-      printf("\n\nUSAGE:\n");
-      printf("interactive:     geomag\n");
-      printf("command line:    geomag model_file date coord alt lat lon\n");
-      printf("coordinate file: geomag model_file f input_file output_file\n");
-      printf("or for help:     geomag h (or ? or -? or /?) \n");
-      printf("\n");
-      printf("Date and location Formats: \n");
-      printf("   Date: xxxx.xxx for decimal  (1947.32)\n");
-      printf("         YYYY,MM,DD for year, month, day  (1947,10,13)\n");
-      printf("         or start_date-end_date (1943.21-1966.11)\n");
-      printf("         or start_date-end_date-step (1943.21-1966.11-1.2)\n");
-      printf("   Coord: D - Geodetic (WGS84 latitude and altitude above mean sea level)\n");
-      printf("          C - Geocentric (spherical, altitude relative to Earth's center)\n");
-      printf("   Altitude: Kxxxxxx.xxx for kilometers  (K1000.13)\n");
-      printf("             Mxxxxxx.xxx for meters  (m1389.24)\n");
-      printf("             Fxxxxxx.xxx for feet  (F192133.73)\n");
-      printf("   Lat/Lon: xxx.xxx for decimal  (-76.53)\n");
-      printf("            ddd,mm,ss for degrees, minutes, seconds (-60,23,22)\n");
-      printf("            (Lat and Lon must be specified in the same format,\n");
-      printf("             for ddd,mm,ss format, two commas each are required  \n");
-      printf("              and decimals of arc-seconds are ignored)  \n");
-      printf("\nRange (only for interactive and command line options): \n");
-      printf("   Date and altitude must fit model.\n");
-      printf("   Lat: -90 to 90 (Use - to denote Southern latitude.)\n");
-      printf("   Lon: -180 to 180 (Use - to denote Westen longitude.)\n");
-      printf("   Minutes and Seconds: -59 to 59.\n");
-      printf("\nNote for command line option: \n");
-      printf("   All arguments are optional but must preserve order.\n");
-      printf("   You can only omit arguments AT THE END, not in between.\n");
-      printf("   Invalid arguments are assumed to be 0.\n");
-      printf("\nNote that this program computes secular variation as the \n");
-      printf("   change over the coming year, rather than instantaneous,\n");
-      printf("   which can be different for declination near magnetic poles.\n");
-      exit(2);
-    } /* help */
   
   if ((argc==5)&&(*(args[2])=='f'))
     {
-      printf("\n\n 'f' switch: converting file with multiple locations.\n");
-      printf("     The first five output columns repeat the input coordinates.\n");
-      printf("     Then follows D, I, H, X, Y, Z, and F.\n");
-      printf("     Finally the SV: dD, dI, dH, dX, dY, dZ,  and dF\n");
-      printf("     The units are the same as when the program is\n");
-      printf("     run in command line or interactive mode.\n\n");
       coords_from_file = 1;
       strncpy(coord_fname,args[3],MAXREAD);
       coordfile=fopen(coord_fname, "rt");
       strncpy(out_fname,args[4],MAXREAD);
       outfile=fopen(out_fname, "w");
-      fprintf(outfile,"Date Coord-System Altitude Latitude Longitude D_deg D_min I_deg I_min H_nT X_nT Y_nT Z_nT F_nT dD_min dI_min dH_nT dX_nT dY_nT dZ_nT dF_nT\n");
     } /* file option */
 
-  if (argc>=3 && argc !=5 && *(args[2])=='f')
-    {
-      printf("\n\nERROR in 'f' switch option: wrong number of arguments\n");
-    }
-
-
-  if ((argc==3)||(argc==4)||(argc==6))
-    {
-      printf("\n\nUSAGE:\n");
-      printf("interactive:     geomag\n");
-      printf("command line:    geomag model_file date coord alt lat lon\n");
-      printf("coordinate file: geomag model_file f input_file output_file\n");
-      printf("or for help:     geomag h \n\n");
-    } /* missing arguments (not fatal) */
-  
   while (again == 1)
     {
       if (coords_from_file) 
@@ -663,15 +601,6 @@ int main(int argc, char**argv)
       
       if (need_to_read_model) 
         {
-          while (stream == NULL)
-            {
-              printf("\n\n");
-              printf("What is the name of the model data file to be opened? ==> ");
-              safegets(inbuff,MAXREAD);
-              strcpy(mdfile, inbuff);
-              if (!(stream = fopen(mdfile, "rt")))
-                printf("\nError opening file %s.", mdfile);
-            }
           rewind(stream);
           
           fileline = 0;                            /* First line will be 1 */
