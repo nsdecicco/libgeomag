@@ -243,7 +243,7 @@ typedef struct {
  * @param longitude East (?) longitude, in degrees.
  * @param sdate Start date.
  */
-int get_field_components(const double alt,
+int get_field_components(double alt,
                          const Units altUnits,
                          const CoordinateSystem coordSys,
                          const double latitude,
@@ -271,7 +271,6 @@ int get_field_components(const double alt,
 	double altmax[MAXMOD]; /* Maximum height of each model. */
 	double minAlt;         /* Minimum height of selected model. */
 	double maxAlt;         /* Maximum height of selected model. */
-	double alt=-999999;
 	double warn_H_val, warn_H_strong_val;
 
 	warn_H = 0;
