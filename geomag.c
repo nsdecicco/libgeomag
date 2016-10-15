@@ -5,7 +5,7 @@
 /****************************************************************************/
 /*                                                                          */
 /*     Disclaimer: This program has undergone limited testing. It is        */
-/*     being distributed unoffically. The National Geophysical Data         */
+/*     being distributed unofficially. The National Geophysical Data        */
 /*     Center does not guarantee it's correctness.                          */
 /*                                                                          */
 /****************************************************************************/
