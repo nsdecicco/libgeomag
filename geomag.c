@@ -345,6 +345,9 @@ int get_field_components(const double alt,
 			minAlt *= FT2KM;
 			maxAlt *= FT2KM;
 			break;
+
+		default:
+			break;
 	}
 
 	if (alt < minAlt || alt > maxAlt) {
@@ -359,6 +362,9 @@ int get_field_components(const double alt,
 
 		case kUnitsFeet:
 			alt /= FT2KM;
+			break;
+
+		default:
 			break;
 	}
 
