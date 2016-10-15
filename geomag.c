@@ -295,9 +295,13 @@ int main(int argc, char**argv)
   
   /* Control variables */
   int   again = 1;
-  int   decyears = 3;
-  int   units = 4;
-  int   decdeg = 3;
+  int   decyears = 3; // What format is the date in?
+                      // 2 = not decimal YYYY,MM,DD
+                      // 1 = decimal YYYY.XXX
+  int   units = 4; // 1 = kilometers (K),
+                   // 2 = meters (M)
+                   // 3 = feet (F)
+  int   decdeg = 3; // 2 = min/sec; 1 = decimal
   int   range = -1;
   int   counter = 0;
   int   warn_H, warn_H_strong, warn_P;
@@ -308,7 +312,9 @@ int main(int argc, char**argv)
   int   max2[MAXMOD];
   int   max3[MAXMOD];
   int   nmax;
-  int   igdgc=3;
+  int   igdgc=3; // Coordinate system:
+                 // 1 = 'D' (Geodetic; WGS-84)
+                 // 2 = 'C' (Geocentric)
   int   isyear=-1;
   int   ismonth=-1;
   int   isday=-1;
