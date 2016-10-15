@@ -334,7 +334,7 @@ int get_field_components(const double alt,
 		return 0;
 	}
 
-	/* Do unit conversions if neccessary */
+	/* Do unit conversions if necessary */
 	switch (altUnits) {
 		case kUnitsMeters:
 			minAlt *= 1000.0;
