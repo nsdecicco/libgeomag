@@ -103,10 +103,10 @@
 /****************************************************************************/
 
 #include <stdio.h>
-#include <stdlib.h>            
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <math.h> 
+#include <math.h>
 
 int my_isnan(double d)
 {
@@ -196,25 +196,7 @@ double ghb[MAXCOEFF]; /** Coefficients of rate of change model. */
  *
  *   alt        Scalar Double          altitude above WGS84 Ellipsoid
  *
- *   epoch      Double array of MAXMOD epoch of model.
- *
  *   ext        Scalar Double          Three 1st-degree external coeff.
- *
- *   latitude   Scalar Double          Latitude.
- *
- *   longitude  Scalar Double          Longitude.
- *
- *   gh1        Double array           Schmidt quasi-normal internal
- *                                     spherical harmonic coeff.
- *
- *   gh2        Double array           Schmidt quasi-normal internal
- *                                     spherical harmonic coeff.
- *
- *   gha        Double array           Coefficients of resulting model.
- *
- *   ghb        Double array           Coefficients of rate of change model.
- *
- *   irec_pos   Integer array of MAXMOD Record counter for header
  *
  */
 
@@ -266,10 +248,10 @@ int get_field_components(const double alt,
                          const double latitude,
                          const double longitude,
                          const double sdate,
-                         )
+                         const char mdfile[])
 {
 	int warn_H, warn_H_strong, warn_P;
-	
+
 	int modelI;       /* Which model (Index) */
 	int nmodel;       /* Number of models in file */
 	int max1[MAXMOD]; /* Main field coefficient. */
@@ -278,10 +260,6 @@ int get_field_components(const double alt,
 	int nmax;
 	long  irec_pos[MAXMOD];
 	
-
-	char mdfile[PATH];
-	char inbuff[MAXINBUFF];
-	char model[MAXMOD][9];
 
 	double epoch[MAXMOD];
 	double yrmin[MAXMOD]; /* Min year of model. */
@@ -295,13 +273,6 @@ int get_field_components(const double alt,
 	double alt=-999999;
 	double warn_H_val, warn_H_strong_val;
 
-	/* Initializations. */
-
-	inbuff[MAXREAD+1]   = '\0';  /* Just to protect mem. */
-	inbuff[MAXINBUFF-1] = '\0';  /* Just to protect mem. */
-
-	/*  Obtain the desired model file and read the data  */
-
 	warn_H = 0;
 	warn_H_val = 99999.0;
 	warn_H_strong = 0;
@@ -309,8 +280,16 @@ int get_field_components(const double alt,
 	warn_P = 0;
 
 	if (sdate < minyr || sdate > maxyr+1) {
+
+	/* Warn if the date is past end of validity. */
+	if ((sdate > model->maxyr) && (sdate < model->maxyr + 1)) {
+		printf("\nWarning: The date %4.2f is out of range,\n"
+		       "         but still within one year of model expiration date.\n"
+		       "         An updated model file is available before 1.1.%4.0f\n",
+		       sdate, model->maxyr);
+	}
 		return 0;
-	} 
+	}
 
 	/* Pick model */
 	for (modelI = 0; modelI < nmodel; modelI++) {
@@ -452,25 +431,37 @@ int get_field_components(const double alt,
 }
 
 /**
- *
+ * Reads model coefficients from a file.
  *
  * @param mdfile Model file name.                   
+ * @return Zero on failure; non-zero on success.
  */
 int read_model(const char mdfile[])
 {
-	int fileline = 0; /* First line will be 1 */
-	FILE *stream = fopen(mdfile, "rt");
+	int   lineNum = 0;        /* First line will be 1 */
+	FILE *stream;
+	char  inbuff[MAXINBUFF];
+	int   modelI;             /* Index into the current model. */
+
+	inbuff[MAXREAD+1]   = '\0';  /* Just to protect mem. */
+	inbuff[MAXINBUFF-1] = '\0';  /* Just to protect mem. */
+
+	if (!(stream = fopen(mdfile, "rt"))) {
+		fprintf(stderr, "Failed to open \"%s\" for reading.\n", mdfile);
+		return 0;
+	}
 
 	rewind(stream);
 
-	modelI = -1;                             /* First model will be 0 */
+	modelI = -1; /* First model will be 0 */
 	while (fgets(inbuff, MAXREAD, stream))
 	{
-		fileline++;                           /* On new line */
+		lineNum++;
 
-		if (strlen(inbuff) != RECL)       /* IF incorrect record size */
+		/* Ensure record size is correct. */
+		if (strlen(inbuff) != RECL)
 		{
-			printf("Corrupt record in file %s on line %d.\n", mdfile, fileline);
+			fprintf(stderr, "Corrupt record in file %s on line %d.\n", mdfile, lineNum);
 			fclose(stream);
 			return 0;
 		}
@@ -489,7 +480,7 @@ int read_model(const char mdfile[])
 			/* If too many headers */
 			if (modelI > MAXMOD)
 			{
-				printf("Too many models in file %s on line %d.", mdfile, fileline);
+				fprintf(stderr, "Too many models in file %s on line %d.", mdfile, lineNum);
 				fclose(stream);
 				return 0;
 			}
@@ -518,15 +509,6 @@ int read_model(const char mdfile[])
 
 	nmodel = modelI + 1;
 	fclose(stream);
-
-	/* if date specified in command line then warn if past end of validity */
-
-	if ((sdate > maxyr) && (sdate < maxyr + 1)) {
-		printf("\nWarning: The date %4.2f is out of range,\n"
-		       "         but still within one year of model expiration date.\n"
-		       "         An updated model file is available before 1.1.%4.0f\n",
-		       sdate, maxyr);
-	}
 
 	return 1;
 }
@@ -585,12 +567,13 @@ double julday(const int month, const int day, const int year)
  */
 int getshc(char file[PATH], int iflag, long int strec, int nmax_of_gh, int gh)
 {
-	char  inbuff[MAXINBUFF];
+	char inbuff[MAXINBUFF];
 	char irat[9];
 	int ii,m,n,mm,nn;
 	int line_num;
 	double g,hh;
 	double trash;
+	FILE *stream;
 
 	if (!(stream = fopen(file, "rt"))) {
 		fprintf(stderr, "\nError on opening file %s", file);
@@ -707,20 +690,16 @@ int extrapsh(double date, double dte1, int nmax1, int nmax2, int gh)
 		{
 			k = nmax2 * (nmax2 + 2);
 			l = nmax1 * (nmax1 + 2);
-			switch(gh)
-			{
-				case 3:
-					for (ii = k + 1; ii <= l; ii++)
-					{
-						gha[ii] = gh1[ii];
-					}
-					break;
-				case 4:
-					for ( ii = k + 1; ii <= l; ++ii)
-					{
-						ghb[ii] = gh1[ii];
-					}
-					break;
+			if (gh == 3) {
+				for (ii = k + 1; ii <= l; ii++)
+				{
+					gha[ii] = gh1[ii];
+				}
+			} else if (gh == 4) {
+				for ( ii = k + 1; ii <= l; ii++)
+				{
+					ghb[ii] = gh1[ii];
+				}
 			}
 			nmax = nmax1;
 		}
@@ -728,39 +707,33 @@ int extrapsh(double date, double dte1, int nmax1, int nmax2, int gh)
 		{
 			k = nmax1 * (nmax1 + 2);
 			l = nmax2 * (nmax2 + 2);
-			switch(gh)
-			{
-				case 3:
-					for (ii = k + 1; ii <= l; ii++)
-					{
-						gha[ii] = factor * gh2[ii];
-					}
-					break;
-				case 4:
-					for (ii = k + 1; ii <= l; ii++)
-					{
-						ghb[ii] = factor * gh2[ii];
-					}
-					break;
+			if (gh == 3) {
+				for (ii = k + 1; ii <= l; ii++)
+				{
+					gha[ii] = factor * gh2[ii];
+				}
+			} else if (gh == 4) {
+				for (ii = k + 1; ii <= l; ii++)
+				{
+					ghb[ii] = factor * gh2[ii];
+				}
 			}
 			nmax = nmax2;
 		}
 	}
-	switch(gh)
-	{
-		case 3:
-			for (ii = 1; ii <= k; ii++)
-			{
-				gha[ii] = gh1[ii] + factor * gh2[ii];
-			}
-			break;
-		case 4:
-			for (ii = 1; ii <= k; ++ii)
-			{
-				ghb[ii] = gh1[ii] + factor * gh2[ii];
-			}
-			break;
+
+	if (gh == 3) {
+		for (ii = 1; ii <= k; ii++)
+		{
+			gha[ii] = gh1[ii] + factor * gh2[ii];
+		}
+	} else if (gh == 4) {
+		for (ii = 1; ii <= k; ii++)
+		{
+			ghb[ii] = gh1[ii] + factor * gh2[ii];
+		}
 	}
+
 	return(nmax);
 }
 
@@ -905,9 +878,9 @@ int interpsh(double date, double dte1, int nmax1, double dte2, int nmax2,
  * @param ext1,2,3  the three 1st-degree external coefficients
  *                  (not used if iext = 0)
  *
- * @param x northward component
- * @param y eastward component
- * @param z vertically-downward component
+ * @param x Output northward component
+ * @param y Output eastward component
+ * @param z Output vertically-downward component
  */
 int shval3(const CoordinateSystem coordSys, double flat, double flon,
            double elev, int lnmax, int gh,
@@ -1154,13 +1127,13 @@ int shval3(const CoordinateSystem coordSys, double flat, double flon,
  * Computes the geomagnetic d, i, h, and f from x, y, and z.
  *
  * @param gh
- * @param x northward component
- * @param y eastward component
- * @param z vertically-downward component
- * @param d declination
- * @param i inclination
- * @param h horizontal intensity
- * @param f total intensity
+ * @param x Input northward component.
+ * @param y Input eastward component.
+ * @param z Input vertically-downward component.
+ * @param d Output declination.
+ * @param i Output inclination.
+ * @param h Output horizontal intensity.
+ * @param f Output total intensity.
  *
  * @author Fortran written by A. Zunde
  *         USGS, MS 964, box 25046 Federal Center, Denver, CO.  80225
