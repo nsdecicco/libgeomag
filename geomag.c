@@ -149,14 +149,14 @@ int my_isnan(double d)
 
 #define MAXDEG 13
 #define MAXCOEFF (MAXDEG*(MAXDEG+2)+1) /* index starts with 1!, (from old Fortran?) */
-double d=0,f=0,h=0,i=0;
-double dtemp,ftemp,htemp,itemp;
-double x=0,y=0,z=0;
-double xtemp,ytemp,ztemp;
 double gh1[MAXCOEFF]; /** Schmidt quasi-normal internal spherical harmonic coeff. */
 double gh2[MAXCOEFF]; /** Schmidt quasi-normal internal spherical harmonic coeff. */
 double gha[MAXCOEFF]; /** Coefficients of resulting model. */
 double ghb[MAXCOEFF]; /** Coefficients of rate of change model. */
+//double d=0,f=0,h=0,i=0;
+//double dtemp,ftemp,htemp,itemp;
+//double x=0,y=0,z=0;
+//double xtemp,ytemp,ztemp;
 
 /*
  *
@@ -200,13 +200,6 @@ double ghb[MAXCOEFF]; /** Coefficients of rate of change model. */
  *
  */
 
-double julday();
-int interpsh();
-int extrapsh();
-int shval3();
-int dihf();
-int getshc();
-
 typedef enum {
 	kUnitsKilometers = 1,
 	kUnitsMeters     = 2,
@@ -228,13 +221,39 @@ typedef struct {
 	double y;    /** */
 	double z;    /** */
 	double ddot; /** Annual rate of change of declination. (arc-min/yr) */
-	double fdot; /** */
-	double hdot; /** */
+	double fdot; /** Annual rate of change of . */
+	double hdot; /** Annual rate of change of . */
 	double idot; /** Annual rate of change of inclination. (arc-min/yr). */
-	double xdot; /** */
-	double ydot; /** */
-	double zdot; /** */
+	double xdot; /** Annual rate of change of . */
+	double ydot; /** Annual rate of change of . */
+	double zdot; /** Annual rate of change of . */
 } BField;
+
+typedef struct {
+	char name[MAXMOD][9];
+	double epoch[MAXMOD];  /** epoch of model. */
+	double yrmin[MAXMOD];  /** Min year of model. */
+	double yrmax[MAXMOD];  /** Max year of model. */
+	double minyr;          /** Min year of all models. */
+	double maxyr;          /** Max year of all models. */
+	double altmin[MAXMOD]; /** Minimum height of each model. */
+	double altmax[MAXMOD]; /** Maximum height of each model. */
+	int nmodel;            /** Number of models in file */
+	int max1[MAXMOD];      /** Main field coefficient. */
+	int max2[MAXMOD];      /** Secular variation coefficient. */
+	int max3[MAXMOD];      /** Acceleration coefficient. */
+	long irec_pos[MAXMOD]; /** Record counter for header */
+} BFieldModel;
+
+double julday(const int month, const int day, const int year);
+int interpsh(const double date, double dte1, int nmax1, double dte2, int nmax2,
+             const int gh);
+int extrapsh(double date, double dte1, int nmax1, int nmax2, int gh);
+int shval3();
+int dihf(const int gh, const double x, const double y, const double z,
+         double *const d, double *const i, double *const h, double *const f);
+int getshc();
+int read_model(BFieldModel *const model, const char mdfile[]);
 
 /**
  * @param alt Altitude, in units specified by altUnits.
@@ -242,8 +261,11 @@ typedef struct {
  * @param latitude North latitude, in degrees.
  * @param longitude East (?) longitude, in degrees.
  * @param sdate Start date.
+ * @param mdfile Filename of the model file.
  */
-int get_field_components(double alt,
+int get_field_components(BField *const bfield,
+                         BFieldModel const*const model,
+                         double alt,
                          const Units altUnits,
                          const CoordinateSystem coordSys,
                          const double latitude,
@@ -254,23 +276,8 @@ int get_field_components(double alt,
 	int warn_H, warn_H_strong, warn_P;
 
 	int modelI;       /* Which model (Index) */
-	int nmodel;       /* Number of models in file */
-	int max1[MAXMOD]; /* Main field coefficient. */
-	int max2[MAXMOD]; /* Secular variation coefficient. */
-	int max3[MAXMOD]; /* Acceleration coefficient. */
 	int nmax;
-	long  irec_pos[MAXMOD];
-	
 
-	double epoch[MAXMOD];
-	double yrmin[MAXMOD]; /* Min year of model. */
-	double yrmax[MAXMOD]; /* Max year of model. */
-	double minyr;         /* Min year of all models. */
-	double maxyr;         /* Max year of all models. */
-	double altmin[MAXMOD]; /* Minimum height of each model. */
-	double altmax[MAXMOD]; /* Maximum height of each model. */
-	double minAlt;         /* Minimum height of selected model. */
-	double maxAlt;         /* Maximum height of selected model. */
 	double warn_H_val, warn_H_strong_val;
 
 	warn_H = 0;
@@ -279,7 +286,11 @@ int get_field_components(double alt,
 	warn_H_strong_val = 99999.0;
 	warn_P = 0;
 
-	if (sdate < minyr || sdate > maxyr+1) {
+	double minAlt;         /** Minimum height of selected model. */
+	double maxAlt;         /** Maximum height of selected model. */
+
+	double dtemp = 0.0, ftemp = 0.0, htemp = 0.0, itemp = 0.0;
+	double xtemp = 0.0, ytemp = 0.0, ztemp;
 
 	/* Warn if the date is past end of validity. */
 	if ((sdate > model->maxyr) && (sdate < model->maxyr + 1)) {
@@ -288,19 +299,21 @@ int get_field_components(double alt,
 		       "         An updated model file is available before 1.1.%4.0f\n",
 		       sdate, model->maxyr);
 	}
+
+	if (sdate < model->minyr || sdate > model->maxyr+1) {
 		return 0;
 	}
 
 	/* Pick model */
-	for (modelI = 0; modelI < nmodel; modelI++) {
-		if (sdate < yrmax[modelI]) break;
+	for (modelI = 0; modelI < model->nmodel; modelI++) {
+		if (sdate < model->yrmax[modelI]) break;
 	}
 	/* if beyond end of last model use last model */
-	if (modelI == nmodel) modelI--;
+	if (modelI == model->nmodel) modelI--;
 
 	/* Get altitude min and max for selected model. */
-	minalt = altmin[modelI];
-	maxalt = altmax[modelI];
+	minAlt = model->altmin[modelI];
+	maxAlt = model->altmax[modelI];
 
 	if (coordSys == kCoordSysGeocentric) {
 		/* Add Earth radius to ranges. */
@@ -354,29 +367,32 @@ int get_field_components(double alt,
 		return 0;
 	}
 
-	/* This will compute everything needed for 1 point in time. */
-
-	if (max2[modelI] == 0) {
-		getshc(mdfile, 1, irec_pos[modelI], max1[modelI], 1);
-		getshc(mdfile, 1, irec_pos[modelI+1], max1[modelI+1], 2);
-		nmax = interpsh(sdate, yrmin[modelI], max1[modelI],
-		                       yrmin[modelI+1], max1[modelI+1], 3);
-		nmax = interpsh(sdate+1, yrmin[modelI] , max1[modelI],
-		                         yrmin[modelI+1], max1[modelI+1],4);
+	// TODO/FIXME: make it so that getshc() doesn't have to read
+	if (model->max2[modelI] == 0) {
+		getshc(mdfile, 1, model->irec_pos[modelI], model->max1[modelI], 1);
+		getshc(mdfile, 1, model->irec_pos[modelI+1], model->max1[modelI+1], 2);
+		nmax = interpsh(sdate, model->yrmin[modelI], model->max1[modelI],
+		                       model->yrmin[modelI+1], model->max1[modelI+1], 3);
+		nmax = interpsh(sdate+1, model->yrmin[modelI] , model->max1[modelI],
+		                         model->yrmin[modelI+1], model->max1[modelI+1],4);
 	} else {
-		getshc(mdfile, 1, irec_pos[modelI], max1[modelI], 1);
-		getshc(mdfile, 0, irec_pos[modelI], max2[modelI], 2);
-		nmax = extrapsh(sdate, epoch[modelI], max1[modelI], max2[modelI], 3);
-		nmax = extrapsh(sdate+1, epoch[modelI], max1[modelI], max2[modelI], 4);
+		getshc(mdfile, 1, model->irec_pos[modelI], model->max1[modelI], 1);
+		getshc(mdfile, 0, model->irec_pos[modelI], model->max2[modelI], 2);
+		nmax = extrapsh(sdate, model->epoch[modelI], model->max1[modelI], model->max2[modelI], 3);
+		nmax = extrapsh(sdate+1, model->epoch[modelI], model->max1[modelI], model->max2[modelI], 4);
 	}
 
 	/* Do the first calculations */
 	shval3(coordSys, latitude, longitude, alt, nmax, 3,
-	       IEXT, EXT_COEFF1, EXT_COEFF2, EXT_COEFF3);
-	dihf(3);
+	       IEXT, EXT_COEFF1, EXT_COEFF2, EXT_COEFF3,
+	       &(bfield->x), &(bfield->y), &(bfield->z));
+	dihf(3, bfield->x, bfield->y, bfield->z,
+	     &(bfield->d), &(bfield->i), &(bfield->h), &(bfield->f));
 	shval3(coordSys, latitude, longitude, alt, nmax, 4,
-	       IEXT, EXT_COEFF1, EXT_COEFF2, EXT_COEFF3);
-	dihf(4);
+	       IEXT, EXT_COEFF1, EXT_COEFF2, EXT_COEFF3,
+	       &xtemp, &ytemp, &ztemp);
+	dihf(4, xtemp, ytemp, ztemp,
+	     &(bfield->d), &(bfield->i), &(bfield->h), &(bfield->f));
 
 	bfield->ddot = ((dtemp - bfield->d)*RAD2DEG);
 	if (bfield->ddot > 180.0) bfield->ddot -= 360.0;
@@ -433,10 +449,11 @@ int get_field_components(double alt,
 /**
  * Reads model coefficients from a file.
  *
- * @param mdfile Model file name.                   
+ * @param model Structure into which model coefficients will be read.
+ * @param mdfile Model file name.
  * @return Zero on failure; non-zero on success.
  */
-int read_model(const char mdfile[])
+int read_model(BFieldModel *const model, const char mdfile[])
 {
 	int   lineNum = 0;        /* First line will be 1 */
 	FILE *stream;
@@ -485,29 +502,36 @@ int read_model(const char mdfile[])
 				return 0;
 			}
 
-			irec_pos[modelI]=ftell(stream);
+			model->irec_pos[modelI] = ftell(stream);
+
 			/* Get fields from buffer into individual vars.  */
-			sscanf(inbuff, "%s%lg%d%d%d%lg%lg%lg%lg", model[modelI],
-			       &epoch[modelI], &max1[modelI], &max2[modelI], &max3[modelI],
-			       &yrmin[modelI], &yrmax[modelI], &altmin[modelI],
-			       &altmax[modelI]);
+			sscanf(inbuff, "%s%lg%d%d%d%lg%lg%lg%lg",
+			       model->name[modelI],
+			       &(model->epoch[modelI]),
+			       &(model->max1[modelI]),
+			       &(model->max2[modelI]),
+			       &(model->max3[modelI]),
+			       &(model->yrmin[modelI]),
+			       &(model->yrmax[modelI]),
+			       &(model->altmin[modelI]),
+			       &(model->altmax[modelI]));
 
 			/* Compute date range for all models */
 			if (modelI == 0) { /* If first model */
-				minyr = yrmin[0];
-				maxyr = yrmax[0];
+				model->minyr = model->yrmin[0];
+				model->maxyr = model->yrmax[0];
 			} else {
-				if (yrmin[modelI] < minyr) {
-					minyr=yrmin[modelI];
+				if (model->yrmin[modelI] < model->minyr) {
+					model->minyr = model->yrmin[modelI];
 				}
-				if (yrmax[modelI] > maxyr){
-					maxyr = yrmax[modelI];
+				if (model->yrmax[modelI] > model->maxyr){
+					model->maxyr = model->yrmax[modelI];
 				}
 			}
 		}
 	}
 
-	nmodel = modelI + 1;
+	model->nmodel = modelI + 1;
 	fclose(stream);
 
 	return 1;
@@ -763,8 +787,8 @@ int extrapsh(double date, double dte1, int nmax1, int nmax2, int gh)
  *         Lockheed Missiles and Space Company, Sunnyvale CA
  *         August 17, 1988
  */
-int interpsh(double date, double dte1, int nmax1, double dte2, int nmax2,
-             int gh)
+int interpsh(const double date, double dte1, int nmax1, double dte2, int nmax2,
+             const int gh)
 {
 	int   nmax;
 	int   k, l;
@@ -883,8 +907,9 @@ int interpsh(double date, double dte1, int nmax1, double dte2, int nmax2,
  * @param z Output vertically-downward component
  */
 int shval3(const CoordinateSystem coordSys, double flat, double flon,
-           double elev, int lnmax, int gh,
-           int iext, double ext1, double ext2, double ext3)
+           const double elev, const int nmax, const int gh,
+           int iext, double ext1, double ext2, double ext3,
+           double *const x, double *const y, double *const z)
 {
 	double earths_radius = 6371.2;
 	double dtr = 0.01745329;
@@ -943,19 +968,10 @@ int shval3(const CoordinateSystem coordSys, double flat, double flon,
 	argument = flon * dtr;
 	sl[1] = sin(argument);
 	cl[1] = cos(argument);
-	switch (gh)
-	{
-		case 3:
-			x = 0;
-			y = 0;
-			z = 0;
-			break;
-		case 4:
-			xtemp = 0;
-			ytemp = 0;
-			ztemp = 0;
-			break;
-	}
+
+	// If gh == 3, x, y, z are x, y, and z; if gh == 4, x, y, and z are
+	// xtemp, ytemp, and ztemp.
+	*x = *y = *z = 0;
 
 	sd = 0.0;
 	cd = 1.0;
@@ -1028,98 +1044,46 @@ int shval3(const CoordinateSystem coordSys, double flat, double flon,
 		}
 		switch (gh)
 		{
-			case 3:
-				aa = rr * gha[l];
-				break;
-			case 4:
-				aa = rr * ghb[l];
-				break;
+			case 3: aa = rr * gha[l]; break;
+			case 4: aa = rr * ghb[l]; break;
 		}
 		if (m == 0)
 		{
-			switch(gh)
-			{
-				case 3:
-					x = x + aa * q[k];
-					z = z - aa * p[k];
-					break;
-				case 4:
-					xtemp = xtemp + aa * q[k];
-					ztemp = ztemp - aa * p[k];
-					break;
-			}
+			*x += aa * q[k];
+			*z -= aa * p[k];
 			l = l + 1;
 		}
 		else
 		{
 			switch(gh)
 			{
-				case 3:
-					bb = rr * gha[l+1];
-					cc = aa * cl[m] + bb * sl[m];
-					x = x + cc * q[k];
-					z = z - cc * p[k];
-					if (clat > 0)
-					{
-						y = y + (aa * sl[m] - bb * cl[m]) *
-						fm * p[k]/((fn + 1.0) * clat);
-					}
-					else
-					{
-						y = y + (aa * sl[m] - bb * cl[m]) * q[k] * slat;
-					}
-					l = l + 2;
-					break;
-				case 4:
-					bb = rr * ghb[l+1];
-					cc = aa * cl[m] + bb * sl[m];
-					xtemp = xtemp + cc * q[k];
-					ztemp = ztemp - cc * p[k];
-					if (clat > 0)
-					{
-						ytemp += (aa * sl[m] - bb * cl[m]) *
-						         fm * p[k]/((fn + 1.0) * clat);
-					}
-					else
-					{
-						ytemp += (aa * sl[m] - bb * cl[m]) * q[k] * slat;
-					}
-					l = l + 2;
-					break;
+				case 3: bb = rr * gha[l+1]; break;
+				case 4: bb = rr * ghb[l+1]; break;
 			}
+			cc = aa * cl[m] + bb * sl[m];
+			*x = *x + cc * q[k];
+			*z = *z - cc * p[k];
+			if (clat > 0) {
+				*y += (aa * sl[m] - bb * cl[m]) * fm * p[k]/((fn + 1.0) * clat);
+			} else {
+				*y += (aa * sl[m] - bb * cl[m]) * q[k] * slat;
+			}
+			l = l + 2;
 		}
 		m = m + 1;
 	}
 	if (iext != 0)
 	{
 		aa = ext2 * cl[1] + ext3 * sl[1];
-		switch (gh)
-		{
-			case 3:
-				x = x - ext1 * clat + aa * slat;
-				y = y + ext2 * sl[1] - ext3 * cl[1];
-				z = z + ext1 * slat + aa * clat;
-				break;
-			case 4:
-				xtemp = xtemp - ext1 * clat + aa * slat;
-				ytemp = ytemp + ext2 * sl[1] - ext3 * cl[1];
-				ztemp = ztemp + ext1 * slat + aa * clat;
-				break;
-		}
+		*x = *x - ext1 * clat + aa * slat;
+		*y = *y + ext2 * sl[1] - ext3 * cl[1];
+		*z = *z + ext1 * slat + aa * clat;
 	}
-	switch(gh)
-	{
-		case 3:
-			aa = x;
-			x = x * cd + z * sd;
-			z = z * cd - aa * sd;
-			break;
-		case 4:
-			aa = xtemp;
-			xtemp = xtemp * cd + ztemp * sd;
-			ztemp = ztemp * cd - aa * sd;
-			break;
-	}
+
+	aa = *x;
+	*x = *x * cd + *z * sd;
+	*z = *z * cd - aa * sd;
+
 	return ios;
 }
 
@@ -1147,7 +1111,8 @@ int shval3(const CoordinateSystem coordSys, double flat, double flon,
  *         <deciccon0@students.rowan.edu>
  *         <nsd.cicco@gmail.com>
  */
-int dihf (int gh)
+int dihf(const int gh, const double x, const double y, const double z,
+         double *const d, double *const i, double *const h, double *const f)
 {
 	int ios;
 	int j;
@@ -1159,89 +1124,44 @@ int dihf (int gh)
 	ios = gh;
 	sn = 0.0001;
 
-	switch(gh)
+	for (j = 1; j <= 1; j++)
 	{
-		case 3:
-			for (j = 1; j <= 1; j++)
+		h2 = x*x + y*y;
+		argument = h2;
+		*h = sqrt(argument);       /* calculate horizontal intensity */
+		argument = h2 + z*z;
+		*f = sqrt(argument);      /* calculate total intensity */
+		if (*f < sn)
+		{
+			/* If d and i cannot be determined, set them equal to NaN. */
+			*d = NaN;
+			*i = NaN;
+		}
+		else
+		{
+			argument = z;
+			argument2 = *h;
+			*i = atan2(argument,argument2);
+			if (*h < sn)
 			{
-				h2 = x*x + y*y;
-				argument = h2;
-				h = sqrt(argument);       /* calculate horizontal intensity */
-				argument = h2 + z*z;
-				f = sqrt(argument);      /* calculate total intensity */
-				if (f < sn)
+				*d = NaN;
+			}
+			else
+			{
+				hpx = *h + x;
+				if (hpx < sn)
 				{
-					d = NaN;        /* If d and i cannot be determined, */
-					i = NaN;        /*       set equal to NaN         */
+					*d = PI;
 				}
 				else
 				{
-					argument = z;
-					argument2 = h;
-					i = atan2(argument,argument2);
-					if (h < sn)
-					{
-						d = NaN;
-					}
-					else
-					{
-						hpx = h + x;
-						if (hpx < sn)
-						{
-							d = PI;
-						}
-						else
-						{
-							argument = y;
-							argument2 = hpx;
-							d = 2.0 * atan2(argument,argument2);
-						}
-					}
+					argument = y;
+					argument2 = hpx;
+					*d = 2.0 * atan2(argument,argument2);
 				}
 			}
-			break;
-		case 4:
-			for (j = 1; j <= 1; j++)
-			{
-				h2 = xtemp*xtemp + ytemp*ytemp;
-				argument = h2;
-				htemp = sqrt(argument);
-				argument = h2 + ztemp*ztemp;
-				ftemp = sqrt(argument);
-				if (ftemp < sn)
-				{
-					dtemp = NaN;    /* If d and i cannot be determined, */
-					itemp = NaN;    /*       set equal to 999.0         */
-				}
-				else
-				{
-					argument = ztemp;
-					argument2 = htemp;
-					itemp = atan2(argument,argument2);
-					if (htemp < sn)
-					{
-						dtemp = NaN;
-					}
-					else
-					{
-						hpx = htemp + xtemp;
-						if (hpx < sn)
-						{
-							dtemp = PI;
-						}
-						else
-						{
-							argument = ytemp;
-							argument2 = hpx;
-							dtemp = 2.0 * atan2(argument,argument2);
-						}
-					}
-				}
-			}
-			break;
-		default:
-			fprintf(stderr, "\nError in subroutine dihf");
-			break;
+		}
 	}
+
 	return ios;
 }
