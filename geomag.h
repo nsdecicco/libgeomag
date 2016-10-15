@@ -11,8 +11,8 @@ typedef enum {
 } Units;
 
 typedef enum {
-	kCoordSysGeodetic, /* WGS-84 */
-	kCoordSysGeocentric
+	kCoordSysGeodetic   = 1, /* WGS-84 */
+	kCoordSysGeocentric = 2
 } CoordinateSystem;
 
 typedef struct {

@@ -232,7 +232,7 @@ int get_field_components(BField *const bfield,
 	double maxAlt;         /** Maximum height of selected model. */
 
 	double dtemp = 0.0, ftemp = 0.0, htemp = 0.0, itemp = 0.0;
-	double xtemp = 0.0, ytemp = 0.0, ztemp;
+	double xtemp = 0.0, ytemp = 0.0, ztemp = 0.0;
 
 	/* Warn if the date is past end of validity. */
 	if ((sdate > model->maxyr) && (sdate < model->maxyr + 1)) {
@@ -334,7 +334,7 @@ int get_field_components(BField *const bfield,
 	       IEXT, EXT_COEFF1, EXT_COEFF2, EXT_COEFF3,
 	       &xtemp, &ytemp, &ztemp);
 	dihf(4, xtemp, ytemp, ztemp,
-	     &(bfield->d), &(bfield->i), &(bfield->h), &(bfield->f));
+	     &dtemp, &itemp, &htemp, &ftemp);
 
 	bfield->ddot = ((dtemp - bfield->d)*RAD2DEG);
 	if (bfield->ddot > 180.0) bfield->ddot -= 360.0;
