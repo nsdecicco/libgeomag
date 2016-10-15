@@ -270,14 +270,6 @@ FILE *stream = NULL;                /* Pointer to specified model data file */
 /*                                                                          */
 /****************************************************************************/
 
-void print_dashed_line();
-void print_long_dashed_line(void);
-void print_header();
-void print_result(double date, double d, double i, double h, double x, double y, double z, double f);
-void print_header_sv();
-void print_result_sv(double date, double ddot, double idot, double hdot, double xdot, double ydot, double zdot, double fdot);
-void print_result_file(FILE *outf, double d, double i, double h, double x, double y, double z, double f,
-                       double ddot, double idot, double hdot, double xdot, double ydot, double zdot, double fdot);
 double julday();
 int   interpsh();
 int   extrapsh();
@@ -332,7 +324,6 @@ int main(int argc, char**argv)
   char coord_fname[PATH];
   char out_fname[PATH];
   FILE *coordfile,*outfile;
-  int iline=0;
   int read_flag;
   
   double epoch[MAXMOD];
@@ -364,21 +355,6 @@ int main(int argc, char**argv)
   inbuff[MAXREAD+1]='\0';  /* Just to protect mem. */
   inbuff[MAXINBUFF-1]='\0';  /* Just to protect mem. */
   
-  for (iarg=0; iarg<argc; iarg++)
-    if (argv[iarg] != NULL)
-      strncpy(args[iarg],argv[iarg],MAXREAD);
-  
-      strncpy(coord_fname,args[3],MAXREAD);
-      coordfile=fopen(coord_fname, "rt");
-      strncpy(out_fname,args[4],MAXREAD);
-      outfile=fopen(out_fname, "w");
-
-          argc = 7;
-          read_flag = fscanf(coordfile,"%s%s%s%s%s%*[^\n]",args[2],args[3],args[4],args[5],args[6]);
-          if (read_flag == EOF) goto reached_EOF;
-          fprintf(outfile,"%s %s %s %s %s ",args[2],args[3],args[4],args[5],args[6]);fflush(outfile);
-          iline++;
-      
               longitude=atof(args[6]);
           
               latitude=atof(args[5]);
@@ -650,137 +626,11 @@ int main(int argc, char**argv)
       
       /*  Output the final results. */
 
-          print_result_file(outfile, d, i, h, x, y, z, f,ddot,idot,hdot,xdot,ydot,zdot,fdot);
+          //print_result_file(outfile, d, i, h, x, y, z, f,ddot,idot,hdot,xdot,ydot,zdot,fdot);
 
  reached_EOF:
   return 0;
 }
-
-void print_dashed_line(void)
-{
-  printf(" -------------------------------------------------------------------------------\n");
-  return;
-}
-
-
-void print_long_dashed_line(void)
-{
-  printf(" - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n");
-  return;
-}
-      
-void print_header(void)
-{ 
-  print_dashed_line();
-  printf("   Date          D           I           H        X        Y        Z        F\n");
-  printf("   (yr)      (deg min)   (deg min)     (nT)     (nT)     (nT)     (nT)     (nT)\n");
-  return;
-}
-
-void print_result(double date, double d, double i, double h, double x, double y, double z, double f)
-{
-  int   ddeg,ideg;
-  double dmin,imin;
-
-      /* Change d and i to deg and min */
-      
-  ddeg=(int)d;
-  dmin=(d-(double)ddeg)*60;
-  if (d > 0 && dmin >= 59.5)
-    {
-      dmin -= 60.0;
-      ddeg++;
-    }
-  if (d < 0 && dmin <= -59.5)
-    {
-      dmin += 60.0;
-      ddeg--;
-    }
-
-  if (ddeg!=0) dmin=fabs(dmin);
-  ideg=(int)i;
-  imin=(i-(double)ideg)*60;
-  if (i > 0 && imin >= 59.5)
-    {
-      imin -= 60.0;
-      ideg++;
-    }
-  if (i < 0 && imin <= -59.5)
-    {
-      imin += 60.0;
-      ideg--;
-    }
-  if (ideg!=0) imin=fabs(imin);
-
-
-  if (my_isnan(d))
-    {
-      if (my_isnan(x))
-        printf("  %4.2f       NaN    %4dd %3.0fm  %8.1f      NaN      NaN %8.1f %8.1f\n",date,ideg,imin,h,z,f);
-      else
-        printf("  %4.2f       NaN    %4dd %3.0fm  %8.1f %8.1f %8.1f %8.1f %8.1f\n",date,ideg,imin,h,x,y,z,f);
-    }
-  else 
-    printf("  %4.2f  %4dd %3.0fm  %4dd %3.0fm  %8.1f %8.1f %8.1f %8.1f %8.1f\n",date,ddeg,dmin,ideg,imin,h,x,y,z,f);
-  return;
-} /* print_result */
-
-void print_header_sv(void)
-{
-  printf("   Date         dD          dI           dH       dX       dY       dZ       dF\n");
-  printf("   (yr)      (min/yr)    (min/yr)    (nT/yr)  (nT/yr)  (nT/yr)  (nT/yr)  (nT/yr)\n");
-} /* print_header_sv */
-
-void print_result_sv(double date, double ddot, double idot, double hdot, double xdot, double ydot, double zdot, double fdot)
-{
-  if (my_isnan(ddot))
-    {
-      if (my_isnan(xdot))
-        printf("  %4.2f        NaN   %7.1f     %8.1f      NaN      NaN %8.1f %8.1f\n",date,idot,hdot,zdot,fdot);
-      else
-        printf("  %4.2f        NaN   %7.1f     %8.1f %8.1f %8.1f %8.1f %8.1f\n",date,idot,hdot,xdot,ydot,zdot,fdot);
-    }
-  else 
-    printf("  %4.2f   %7.1f    %7.1f     %8.1f %8.1f %8.1f %8.1f %8.1f\n",date,ddot,idot,hdot,xdot,ydot,zdot,fdot);
-  return;
-} /* print_result_sv */
-
-void print_result_file(FILE *outf, double d, double i, double h, double x, double y, double z, double f,
-                       double ddot, double idot, double hdot, double xdot, double ydot, double zdot, double fdot)
-{
-  int   ddeg,ideg;
-  double dmin,imin;
-  
-  /* Change d and i to deg and min */
-      
-  ddeg=(int)d;
-  dmin=(d-(double)ddeg)*60;
-  if (ddeg!=0) dmin=fabs(dmin);
-  ideg=(int)i;
-  imin=(i-(double)ideg)*60;
-  if (ideg!=0) imin=fabs(imin);
-  
-  if (my_isnan(d))
-    {
-      if (my_isnan(x))
-        fprintf(outf," NaN        %4dd %2.0fm  %8.1f      NaN      NaN %8.1f %8.1f",ideg,imin,h,z,f);
-      else
-        fprintf(outf," NaN        %4dd %2.0fm  %8.1f %8.1f %8.1f %8.1f %8.1f",ideg,imin,h,x,y,z,f);
-    }
-  else 
-    fprintf(outf," %4dd %2.0fm  %4dd %2.0fm  %8.1f %8.1f %8.1f %8.1f %8.1f",ddeg,dmin,ideg,imin,h,x,y,z,f);
-
-  if (my_isnan(ddot))
-    {
-      if (my_isnan(xdot))
-        fprintf(outf,"      NaN  %7.1f     %8.1f      NaN      NaN %8.1f %8.1f\n",idot,hdot,zdot,fdot);
-      else
-        fprintf(outf,"      NaN  %7.1f     %8.1f %8.1f %8.1f %8.1f %8.1f\n",idot,hdot,xdot,ydot,zdot,fdot);
-    }
-  else 
-    fprintf(outf," %7.1f   %7.1f     %8.1f %8.1f %8.1f %8.1f %8.1f\n",ddot,idot,hdot,xdot,ydot,zdot,fdot);
-  return;
-} /* print_result_file */
 
 /****************************************************************************/
 /*                                                                          */
