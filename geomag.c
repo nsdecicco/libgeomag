@@ -97,7 +97,7 @@
 /*                                                                          */
 /****************************************************************************/
 /*                                                                          */
-/*      Subroutines called :  degrees_to_decimal,julday,getshc,interpsh,    */
+/*      Subroutines called :  julday,getshc,interpsh,                       */
 /*                            extrapsh,shval3,dihf                          */
 /*                                                                          */
 /****************************************************************************/
@@ -278,7 +278,6 @@ void print_header_sv();
 void print_result_sv(double date, double ddot, double idot, double hdot, double xdot, double ydot, double zdot, double fdot);
 void print_result_file(FILE *outf, double d, double i, double h, double x, double y, double z, double f,
                        double ddot, double idot, double hdot, double xdot, double ydot, double zdot, double fdot);
-double degrees_to_decimal();
 double julday();
 int   interpsh();
 int   extrapsh();
@@ -301,7 +300,6 @@ int main(int argc, char**argv)
   int   units = 4; // 1 = kilometers (K),
                    // 2 = meters (M)
                    // 3 = feet (F)
-  int   decdeg = 3; // 2 = min/sec; 1 = decimal
   int   range = -1;
   int   counter = 0;
   int   warn_H, warn_H_strong, warn_P;
@@ -321,12 +319,6 @@ int main(int argc, char**argv)
   int   ieyear=-1;
   int   iemonth=-1;
   int   ieday=-1;
-  int   ilat_deg=200;
-  int   ilat_min=200;
-  int   ilat_sec=200;
-  int   ilon_deg=200;
-  int   ilon_min=200;
-  int   ilon_sec=200;
   int   fileline;
   long  irec_pos[MAXMOD];
   
@@ -394,61 +386,9 @@ int main(int argc, char**argv)
           fprintf(outfile,"%s %s %s %s %s ",args[2],args[3],args[4],args[5],args[6]);fflush(outfile);
           iline++;
       
-        strncpy(inbuff, args[6], MAXREAD);
-          if ((rest=strchr(inbuff, ',')))     /* If it contains a comma */
-            {
-              decdeg=2;                        /* Then not decimal degrees */
-              begin=inbuff;
-              rest[0]='\0';                    /* Chop into sub string */
-              rest++;                          /* Move to next substring */
-              ilon_deg=atoi(begin);
-              begin=rest;
-              if ((rest=strchr(begin, ',')))
-                {
-                  rest[0]='\0';
-                  rest++;
-                  ilon_min=atoi(begin);
-                  ilon_sec=atoi(rest);
-                } 
-              else 
-                {
-                  ilon_min=0;
-                  ilon_sec=0;
-                }
-            } 
-          else 
-            {
-              decdeg=1;                        /* Else it's decimal */
               longitude=atof(args[6]);
-            }
           
-        strncpy(inbuff, args[5], MAXREAD);
-          if ((rest=strchr(inbuff, ',')))
-            {
-              decdeg=2;
-              begin=inbuff;
-              rest[0]='\0';
-              rest++;
-              ilat_deg=atoi(begin);
-              begin=rest;
-              if ((rest=strchr(begin, ',')))
-                {
-                  rest[0]='\0';
-                  rest++;
-                  ilat_min=atoi(begin);
-                  ilat_sec=atoi(rest);
-                } 
-              else 
-                {
-                  ilat_min=0;
-                  ilat_sec=0;
-                }
-            }
-          else 
-            {
-              decdeg=1;
               latitude=atof(args[5]);
-            }
           
         strncpy(inbuff, args[4], MAXREAD);
           inbuff[0]=toupper(inbuff[0]);
@@ -737,32 +677,12 @@ int main(int argc, char**argv)
       
       /* Get lat/long prefs */
 
-      if (!arg_err && (decdeg != 1 && decdeg != 2))
-        {printf("\nError: unrecognized lat %s or lon %s in coordinate file line %1d\n\n",args[5],args[6],iline); arg_err = 1;}
-
       /* Get lat/lon */
       
-      if (decdeg==1)
-        {
-          if (!arg_err && (latitude < -90 || latitude > 90))
-            {printf("\nError: unrecognized latitude %s in coordinate file line %1d\n\n",args[6],iline); arg_err = 1;} 
+      if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+        return 0;
+      }
 
-          if (!arg_err && (longitude < -180 || longitude > 180))
-            {printf("\nError: unrecognized longitude %s in coordinate file line %1d\n\n",args[6],iline); arg_err = 1;} 
-        } /* if (decdeg==1) */
-      else 
-        {
-          latitude=degrees_to_decimal(ilat_deg,ilat_min,ilat_sec);
-          longitude=degrees_to_decimal(ilon_deg,ilon_min,ilon_sec);
-
-          if (!arg_err && (latitude < -90 || latitude > 90))
-            {printf("\nError: unrecognized latitude %s in coordinate file line %1d\n\n",args[6],iline); arg_err = 1;} 
-          
-          if (!arg_err && (longitude < -180 || longitude > 180))
-            {printf("\nError: unrecognized longitude %s in coordinate file line %1d\n\n",args[6],iline); arg_err = 1;} 
-
-        } /* if (decdeg != 1) */
-                  
       /** This will compute everything needed for 1 point in time. **/
       
       
@@ -851,10 +771,10 @@ int main(int argc, char**argv)
       if (again == 1)
         {
           /* Reset defaults to catch on all while loops */
-          igdgc=decyears=units=decdeg=-1;
+          igdgc=decyears=units=-1;
           ismonth=isday=isyear=sdate=edate=range=step=-1;
-          latitude=ilat_deg=ilat_min=ilat_sec=200;
-          longitude=ilon_deg=ilon_min=ilon_sec=200;
+          latitude=200;
+          longitude=200;
           alt=-9999999;
           argc = 1;
         }
@@ -989,57 +909,6 @@ void print_result_file(FILE *outf, double d, double i, double h, double x, doubl
     fprintf(outf," %7.1f   %7.1f     %8.1f %8.1f %8.1f %8.1f %8.1f\n",ddot,idot,hdot,xdot,ydot,zdot,fdot);
   return;
 } /* print_result_file */
-
-/****************************************************************************/
-/*                                                                          */
-/*                       Subroutine degrees_to_decimal                      */
-/*                                                                          */
-/****************************************************************************/
-/*                                                                          */
-/*     Converts degrees,minutes, seconds to decimal degrees.                */
-/*                                                                          */
-/*     Input:                                                               */
-/*            degrees - Integer degrees                                     */
-/*            minutes - Integer minutes                                     */
-/*            seconds - Integer seconds                                     */
-/*                                                                          */
-/*     Output:                                                              */
-/*            decimal - degrees in decimal degrees                          */
-/*                                                                          */
-/*     C                                                                    */
-/*           C. H. Shaffer                                                  */
-/*           Lockheed Missiles and Space Company, Sunnyvale CA              */
-/*           August 12, 1988                                                */
-/*                                                                          */
-/****************************************************************************/
-
-double degrees_to_decimal(int degrees,int minutes,int seconds)
-{
-  double deg;
-  double min;
-  double sec;
-  double decimal;
-  
-  deg = degrees;
-  min = minutes/60.0;
-  sec = seconds/3600.0;
-  
-  decimal = fabs(sec) + fabs(min) + fabs(deg);
-  
-  if (deg < 0) {
-    decimal = -decimal;
-  } else if (deg == 0){
-    if (min < 0){
-      decimal = -decimal;
-    } else if (min == 0){
-      if (sec<0){
-        decimal = -decimal;
-      }
-    }
-  }
-  
-  return(decimal);
-}
 
 /****************************************************************************/
 /*                                                                          */
