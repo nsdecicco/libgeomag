@@ -569,6 +569,7 @@ double julday(const int month, const int day, const int year)
  *
  * @param gh1 or 2   Schmidt quasi-normal internal spherical
  *                   harmonic coefficients
+ * @return 0 on failure, 1 on success.
  *
  *     FORTRAN
  *           Bill Flanagan
@@ -585,18 +586,16 @@ int getshc(char file[PATH], int iflag, long int strec, int nmax_of_gh, int gh)
 	char  inbuff[MAXINBUFF];
 	char irat[9];
 	int ii,m,n,mm,nn;
-	int ios;
 	int line_num;
 	double g,hh;
 	double trash;
 
 	if (!(stream = fopen(file, "rt"))) {
 		fprintf(stderr, "\nError on opening file %s", file);
-		return ios;
+		return 0;
 	}
 
 	ii = 0;
-	ios = 0;
 	fseek(stream,strec,SEEK_SET);
 	for (nn = 1; nn <= nmax_of_gh; nn++)
 	{
@@ -616,9 +615,8 @@ int getshc(char file[PATH], int iflag, long int strec, int nmax_of_gh, int gh)
 			}
 			if ((nn != n) || (mm != m))
 			{
-				ios = -2;
 				fclose(stream);
-				return ios;
+				return 0;
 			}
 			ii = ii + 1;
 			switch(gh)
@@ -653,7 +651,7 @@ int getshc(char file[PATH], int iflag, long int strec, int nmax_of_gh, int gh)
 	}
 
 	fclose(stream);
-	return ios;
+	return 1;
 }
 
 
