@@ -316,9 +316,6 @@ int main(int argc, char**argv)
   int   isyear=-1;
   int   ismonth=-1;
   int   isday=-1;
-  int   ieyear=-1;
-  int   iemonth=-1;
-  int   ieday=-1;
   int   fileline;
   long  irec_pos[MAXMOD];
   
@@ -352,7 +349,6 @@ int main(int argc, char**argv)
   double sdate=-1;
   double step=-1;
   double syr;
-  double edate=-1;
   double latitude=200;
   double longitude=200;
   double ddot;
@@ -390,123 +386,24 @@ int main(int argc, char**argv)
           
               latitude=atof(args[5]);
           
-        strncpy(inbuff, args[4], MAXREAD);
-          inbuff[0]=toupper(inbuff[0]);
-          if (inbuff[0]=='K') units=1;
-          else if (inbuff[0]=='M') units=2;
-          else if (inbuff[0]=='F') units=3;
-          if (strlen(inbuff)>1)
-            {
-              inbuff[0]='\0';
-              begin=inbuff+1;
-              alt=atof(begin);
-            }
+          units=2; // meters
+          alt = /* altitude */;
           
-        strncpy(inbuff, args[3], MAXREAD);
-          inbuff[0]=toupper(inbuff[0]);
-          if (inbuff[0]=='D') igdgc=1;
-          else if (inbuff[0]=='C') igdgc=2;
+         igdgc=1; // Geodetic WGS-84 coordinate system
           
-        strncpy(inbuff, args[2], MAXREAD);
-          if ((rest=strchr(inbuff, '-')))   /* If it contains a dash */
-            {
-              range = 2;                     /* They want a range */
-              rest[0]='\0';                  /* Sep dates */
-              rest++;
-              begin=rest;
-              if ((rest=strchr(begin, '-')))    /* If it contains 2 dashs */
-                {
-                  rest[0]='\0';                  /* Sep step */
-                  rest++;
-                  step=atof(rest);               /* Get step size */
-                }
-              if ((rest=strchr(begin, ',')))    /* If it contains a comma */
-                {
-                  decyears=2;                    /* It's not decimal years */
-                  rest[0]='\0';
-                  rest++;
-                  ieyear=atoi(begin);
-                  begin=rest;
-                  if ((rest=strchr(begin, ',')))
-                    {
-                      rest[0]='\0';
-                      rest++;
-                      iemonth=atoi(begin);
-                      ieday=atoi(rest);
-                    } 
-                  else 
-                    {
-                      iemonth=0;
-                      ieday=0;
-                    }
-                  if ((rest=strchr(inbuff, ',')))
-                    {
-                      begin=inbuff;
-                      rest[0]='\0';
-                      rest++;
-                      isyear=atoi(begin);
-                      begin=rest;
-                      if ((rest=strchr(begin, ',')))
-                        {
-                          rest[0]='\0';
-                          rest++;
-                          ismonth=atoi(begin);
-                          isday=atoi(rest);
-                        } 
-                      else 
-                        {
-                          ismonth=0;
-                          isday=0;
-                        }
-                    } 
-                  else 
-                    {
-                      sdate=atof(inbuff);
-                    }
-                } 
-              else 
-                {
-                  decyears=1;                    /* Else it's decimal years */
-                  sdate=atof(inbuff);
-                  edate=atof(begin);
-                }
-            } 
-          else 
-            {
-              range = 1;
-              if ((rest=strchr(inbuff, ',')))   /* If it contains a comma */
-                {
-                  decyears=2;                    /* It's not decimal years */
-                  begin=inbuff;
-                  rest[0]='\0';
-                  rest++;
-                  isyear=atoi(begin);
-                  begin=rest;
-                  if ((rest=strchr(begin, ',')))
-                    {
-                      rest[0]='\0';
-                      rest++;
-                      ismonth=atoi(begin);
-                      isday=atoi(rest);
-                    } 
-                  else 
-                    {
-                      ismonth=0;
-                      isday=0;
-                    }
-                  sdate = julday(ismonth,isday,isyear);
-                } 
-              else 
-                {
-                  decyears=1;                    /* Else it's decimal years */
-                  sdate=atof(args[2]);
-                }
-            }
-          if (sdate==0)
-            {                        /* If date not valid */
-              decyears=-1;
-              range=-1;
-            }
+         /* If we don't want a date range */
+         range = 1;
+
+             /* Decimal years */
+             decyears=1;
+             sdate= /* decimal years as a float. so e.g., 1995.5f */;
+
+             /* Not-decimal years */
+             decyears = 2;
+             isyear  = ; /* start year w/ or w/o range for not-decimal */
+             ismonth = ; /* start month w/ or w/o range for not-decimal */
+             isday   = ; /* start day w/ or w/o range for not-decimal */
+             sdate   = julday(ismonth,isday,isyear);
       
           if (need_to_read_model)
             {
@@ -514,12 +411,6 @@ int main(int argc, char**argv)
               stream=fopen(mdfile, "rt");
             }
           break;
-      
-      if (range == 2) 
-        {
-          printf("Error in line %1d, date = %s: date ranges not allowed for file option\n\n",iline,args[2]);
-          exit(2);
-        }
       
       /*  Obtain the desired model file and read the data  */
       
@@ -607,16 +498,12 @@ int main(int argc, char**argv)
       
       /* Get date */
       
-      if (!arg_err && (decyears != 1 && decyears != 2))
-        {printf("\nError: unrecognized date %s in coordinate file line %1d\n\n",args[2],iline); arg_err = 1;} 
 
-      if (!arg_err && range != 1)
-        {printf("\nError: unrecognized date %s in coordinate file line %1d\n\n",args[2],iline); arg_err = 1;} 
-      
       if (range == 1)
         {
-          if (!arg_err && (sdate < minyr || sdate > maxyr+1))
-            {printf("\nError: unrecognized date %s in coordinate file line %1d\n\n",args[2],iline); arg_err = 1;} 
+          if (sdate < minyr || sdate > maxyr+1) {
+            return 0;
+          } 
         } /* (range == 1) */
       
       /* Pick model */
@@ -630,8 +517,9 @@ int main(int argc, char**argv)
       
       /* Get Coordinate prefs */
 
-      if (!arg_err && (igdgc != 1 && igdgc != 2))
-          {printf("\nError: unrecognized coordinate system %s in coordinate file line %1d\n\n",args[3],iline); arg_err = 1;} 
+      if (igdgc != 1 && igdgc != 2) {
+        return 0;
+      }
 
       /* If needed modify ranges to reflect coords. */
       if (igdgc==2)
@@ -643,8 +531,9 @@ int main(int argc, char**argv)
       /* Get unit prefs */
       if (igdgc==1)
         {
-          if (!arg_err && (units > 3 || units < 1))
-            {printf("\nError: unrecognized altitude units %s in coordinate file line %1d\n\n",args[4],iline); arg_err = 1;} 
+          if (units > 3 || units < 1) {
+            return 0;
+          } 
         }
       else units = 1; /* geocentric always in km */
       
@@ -662,8 +551,9 @@ int main(int argc, char**argv)
       
       /* Get altitude */
 
-      if (!arg_err && (alt < minalt || alt > maxalt))
-        {printf("\nError: unrecognized altitude %s in coordinate file line %1d\n\n",args[4],iline); arg_err = 1;} 
+      if (alt < minalt || alt > maxalt) {
+        return 0;
+      }
 
       /* Convert altitude to km */
       if (units==2)
@@ -772,7 +662,7 @@ int main(int argc, char**argv)
         {
           /* Reset defaults to catch on all while loops */
           igdgc=decyears=units=-1;
-          ismonth=isday=isyear=sdate=edate=range=step=-1;
+          ismonth=isday=isyear=sdate=range=step=-1;
           latitude=200;
           longitude=200;
           alt=-9999999;
