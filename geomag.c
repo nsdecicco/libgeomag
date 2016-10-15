@@ -691,6 +691,10 @@ int extrapsh(double date, double dte1, int nmax1, int nmax2, int gh)
 	int    ii;
 	double factor;
 
+	if (!(gh == 3 || gh == 4)) {
+		fprintf(stderr, "extrapsh: fatal: gh may only be 3 or 4\n");
+	}
+
 	factor = date - dte1;
 	if (nmax1 == nmax2)
 	{
@@ -717,9 +721,6 @@ int extrapsh(double date, double dte1, int nmax1, int nmax2, int gh)
 						ghb[ii] = gh1[ii];
 					}
 					break;
-				default:
-					printf("\nError in subroutine extrapsh");
-					break;
 			}
 			nmax = nmax1;
 		}
@@ -741,9 +742,6 @@ int extrapsh(double date, double dte1, int nmax1, int nmax2, int gh)
 						ghb[ii] = factor * gh2[ii];
 					}
 					break;
-				default:
-					printf("\nError in subroutine extrapsh");
-					break;
 			}
 			nmax = nmax2;
 		}
@@ -761,9 +759,6 @@ int extrapsh(double date, double dte1, int nmax1, int nmax2, int gh)
 			{
 				ghb[ii] = gh1[ii] + factor * gh2[ii];
 			}
-			break;
-		default:
-			printf("\nError in subroutine extrapsh");
 			break;
 	}
 	return(nmax);
@@ -940,6 +935,11 @@ int shval3(const CoordinateSystem coordSys, double flat, double flon,
 	int ios;
 	double argument;
 	double power;
+
+	if (!(gh == 3 || gh == 4)) {
+		fprintf(stderr, "shval3: gh may only be 3 or 4\n");
+	}
+
 	a2 = 40680631.59; /* Square of the semi-major axes of the WGS84 reference
 	                     sphereoid used for transforming between geodetic and
 	                     geocentric coordinates. */
@@ -981,9 +981,6 @@ int shval3(const CoordinateSystem coordSys, double flat, double flon,
 			xtemp = 0;
 			ytemp = 0;
 			ztemp = 0;
-			break;
-		default:
-			fprintf(stderr, "\nError in subroutine shval3");
 			break;
 	}
 
@@ -1064,9 +1061,6 @@ int shval3(const CoordinateSystem coordSys, double flat, double flon,
 			case 4:
 				aa = rr * ghb[l];
 				break;
-			default:
-				printf(stderr, "\nError in subroutine shval3");
-			break;
 		}
 		if (m == 0)
 		{
@@ -1079,9 +1073,6 @@ int shval3(const CoordinateSystem coordSys, double flat, double flon,
 				case 4:
 					xtemp = xtemp + aa * q[k];
 					ztemp = ztemp - aa * p[k];
-					break;
-				default:
-					printf("\nError in subroutine shval3");
 					break;
 			}
 			l = l + 1;
@@ -1122,9 +1113,6 @@ int shval3(const CoordinateSystem coordSys, double flat, double flon,
 					}
 					l = l + 2;
 					break;
-				default:
-					fprintf(stderr, "\nError in subroutine shval3");
-					break;
 			}
 		}
 		m = m + 1;
@@ -1144,9 +1132,6 @@ int shval3(const CoordinateSystem coordSys, double flat, double flon,
 				ytemp = ytemp + ext2 * sl[1] - ext3 * cl[1];
 				ztemp = ztemp + ext1 * slat + aa * clat;
 				break;
-			default:
-				printf("\nError in subroutine shval3");
-				break;
 		}
 	}
 	switch(gh)
@@ -1160,9 +1145,6 @@ int shval3(const CoordinateSystem coordSys, double flat, double flon,
 			aa = xtemp;
 			xtemp = xtemp * cd + ztemp * sd;
 			ztemp = ztemp * cd - aa * sd;
-			break;
-		default:
-			fprintf(stderr, "\nError in subroutine shval3");
 			break;
 	}
 	return ios;
