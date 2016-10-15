@@ -398,37 +398,38 @@ int get_field_components(const double alt,
 	       IEXT, EXT_COEFF1, EXT_COEFF2, EXT_COEFF3);
 	dihf(4);
 
-	bfield->ddot = ((dtemp - d)*RAD2DEG);
-	if (bfield->ddot > 180.0) ddot -= 360.0;
-	if (bfield->ddot <= -180.0) ddot += 360.0;
+	bfield->ddot = ((dtemp - bfield->d)*RAD2DEG);
+	if (bfield->ddot > 180.0) bfield->ddot -= 360.0;
+	if (bfield->ddot <= -180.0) bfield->ddot += 360.0;
 	bfield->ddot *= 60.0;
 
-	bfield->idot = ((itemp - i)*RAD2DEG)*60;
-	d = d*(RAD2DEG);   i = i*(RAD2DEG);
-	bfield->hdot = htemp - h;
-	bfield->xdot = xtemp - x;
-	bfield->ydot = ytemp - y;
-	bfield->zdot = ztemp - z;
-	bfield->fdot = ftemp - f;
+	bfield->idot = ((itemp - bfield->i)*RAD2DEG)*60;
+	bfield->d *= RAD2DEG;
+	bfield->i *= RAD2DEG;
+	bfield->hdot = htemp - bfield->h;
+	bfield->xdot = xtemp - bfield->x;
+	bfield->ydot = ytemp - bfield->y;
+	bfield->zdot = ztemp - bfield->z;
+	bfield->fdot = ftemp - bfield->f;
 
 	/* Deal with geographic and magnetic poles */
-	if (h < 100.0) /* at magnetic poles */
+	if (bfield->h < 100.0) /* at magnetic poles */
 	{
-		d = NaN;
-		ddot = NaN;
+		bfield->d = NaN;
+		bfield->ddot = NaN;
 		/* while rest is ok */
 	}
 
-	if (h < 1000.0) {
+	if (bfield->h < 1000.0) {
 		warn_H = 0;
 		warn_H_strong = 1;
-		if (h < warn_H_strong_val) {
-			warn_H_strong_val = h;
+		if (bfield->h < warn_H_strong_val) {
+			warn_H_strong_val = bfield->h;
 		}
-	} else if (h < 5000.0 && !warn_H_strong)  {
+	} else if (bfield->h < 5000.0 && !warn_H_strong)  {
 		warn_H = 1;
-		if (h<warn_H_val) {
-			warn_H_val = h;
+		if (bfield->h < warn_H_val) {
+			warn_H_val = bfield->h;
 		}
 	}
 
