@@ -148,14 +148,14 @@ int my_isnan(double d)
 
 #define MAXDEG 13
 #define MAXCOEFF (MAXDEG*(MAXDEG+2)+1) /* index starts with 1!, (from old Fortran?) */
-double gh1[MAXCOEFF];
-double gh2[MAXCOEFF];
-double gha[MAXCOEFF];              /* Geomag global variables */
-double ghb[MAXCOEFF];
 double d=0,f=0,h=0,i=0;
 double dtemp,ftemp,htemp,itemp;
 double x=0,y=0,z=0;
 double xtemp,ytemp,ztemp;
+double gh1[MAXCOEFF]; /** Schmidt quasi-normal internal spherical harmonic coeff. */
+double gh2[MAXCOEFF]; /** Schmidt quasi-normal internal spherical harmonic coeff. */
+double gha[MAXCOEFF]; /** Coefficients of resulting model. */
+double ghb[MAXCOEFF]; /** Coefficients of rate of change model. */
 
 /*
  *
