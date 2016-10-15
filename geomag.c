@@ -1056,7 +1056,6 @@ static int dihf(const int gh, const double x, const double y, const double z,
                 double *const d, double *const i, double *const h, double *const f)
 {
 	int ios;
-	int j;
 	double sn;
 	double h2;
 	double hpx;
@@ -1065,41 +1064,38 @@ static int dihf(const int gh, const double x, const double y, const double z,
 	ios = gh;
 	sn = 0.0001;
 
-	for (j = 1; j <= 1; j++)
+	h2 = x*x + y*y;
+	argument = h2;
+	*h = sqrt(argument);       /* calculate horizontal intensity */
+	argument = h2 + z*z;
+	*f = sqrt(argument);      /* calculate total intensity */
+	if (*f < sn)
 	{
-		h2 = x*x + y*y;
-		argument = h2;
-		*h = sqrt(argument);       /* calculate horizontal intensity */
-		argument = h2 + z*z;
-		*f = sqrt(argument);      /* calculate total intensity */
-		if (*f < sn)
+		/* If d and i cannot be determined, set them equal to NaN. */
+		*d = NaN;
+		*i = NaN;
+	}
+	else
+	{
+		argument = z;
+		argument2 = *h;
+		*i = atan2(argument,argument2);
+		if (*h < sn)
 		{
-			/* If d and i cannot be determined, set them equal to NaN. */
 			*d = NaN;
-			*i = NaN;
 		}
 		else
 		{
-			argument = z;
-			argument2 = *h;
-			*i = atan2(argument,argument2);
-			if (*h < sn)
+			hpx = *h + x;
+			if (hpx < sn)
 			{
-				*d = NaN;
+				*d = PI;
 			}
 			else
 			{
-				hpx = *h + x;
-				if (hpx < sn)
-				{
-					*d = PI;
-				}
-				else
-				{
-					argument = y;
-					argument2 = hpx;
-					*d = 2.0 * atan2(argument,argument2);
-				}
+				argument = y;
+				argument2 = hpx;
+				*d = 2.0 * atan2(argument,argument2);
 			}
 		}
 	}
