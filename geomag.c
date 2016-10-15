@@ -98,7 +98,7 @@
 /****************************************************************************/
 /*                                                                          */
 /*      Subroutines called :  degrees_to_decimal,julday,getshc,interpsh,    */
-/*                            extrapsh,shval3,dihf,safegets                 */
+/*                            extrapsh,shval3,dihf                          */
 /*                                                                          */
 /****************************************************************************/
 
@@ -284,7 +284,6 @@ int   interpsh();
 int   extrapsh();
 int   shval3();
 int   dihf();
-int   safegets(char *buffer,int n);
 int getshc();
 
 int main(int argc, char**argv)
@@ -665,185 +664,14 @@ int main(int argc, char**argv)
       if (!arg_err && (decyears != 1 && decyears != 2))
         {printf("\nError: unrecognized date %s in coordinate file line %1d\n\n",args[2],iline); arg_err = 1;} 
 
-      while ((decyears!=1)&&(decyears!=2))
-        {
-          printf("\nHow would you like to enter the date?\n");
-          printf("       1) In decimal years.\n");
-          printf("       2) In year, month, and day.\n");
-          printf("\n                            ==> ");
-          safegets(inbuff, MAXREAD);
-          decyears=atoi(inbuff);
-        }
-
       if (!arg_err && range != 1)
         {printf("\nError: unrecognized date %s in coordinate file line %1d\n\n",args[2],iline); arg_err = 1;} 
-      
-      while ((range!=1)&&(range!=2))
-        {
-          printf("\nWould you like output for a single date or for a range of dates?\n");
-          printf("       1) A single date.\n");
-          printf("       2) A range of dates.\n");
-          printf("\n                            ==> ");
-          safegets(inbuff, MAXREAD);
-          range=atoi(inbuff);
-        }
-      
       
       if (range == 1)
         {
           if (!arg_err && (sdate < minyr || sdate > maxyr+1))
             {printf("\nError: unrecognized date %s in coordinate file line %1d\n\n",args[2],iline); arg_err = 1;} 
-
-          while ((sdate<minyr)||(sdate>maxyr+1))
-            {
-              if (decyears==1)
-                {
-                  printf("\nEnter the decimal date (%4.2f to %4.0f): ",minyr, maxyr);
-                  safegets(inbuff, MAXREAD);
-                  sdate=atof(inbuff);
-                } 
-              else 
-                {            
-                  while ((isyear>(int)maxyr+1)||(isyear<(int)minyr))
-                    {
-                      printf("\nEnter the date (%4.2f to %4.2f)\n ", minyr, maxyr);
-                      printf("\n   Year (%d to %d): ",(int)minyr,(int)maxyr);
-                      safegets(inbuff, MAXREAD);
-                      isyear=atoi(inbuff);
-                    }
-                  
-                  while ((ismonth>12)||(ismonth<1))
-                    {
-                      printf("\n   Month (1-12): ");
-                      safegets(inbuff, MAXREAD);
-                      ismonth=atoi(inbuff);
-                    }
-                  
-                  while ((isday>31)||(isday<1))
-                    {
-                      printf("\n   Day (1-31): ");
-                      safegets(inbuff, MAXREAD);
-                      isday=atoi(inbuff);
-                    }
-                  
-                  sdate = julday(ismonth,isday,isyear);
-                }                  
-              if ((sdate<minyr)||(sdate>=maxyr+1))
-                {
-                  ismonth=isday=isyear=0;
-                  printf("\nError: The date %4.2f is out of range.\n", sdate);
-                }
-              
-              if ((sdate>maxyr)&&(sdate<maxyr+1))
-                {
-                  printf("\nWarning: The date %4.2f is out of range,\n", sdate);
-                  printf("         but still within one year of model expiration date.\n");
-                  printf("         An updated model file is available before 1.1.%4.0f\n",maxyr);
-                }
-              
-            } /* if single date */
         } /* (range == 1) */
-      else 
-        {    
-          while ((sdate<minyr)||(sdate>maxyr))
-            {
-              if (decyears==1)
-                {
-                  printf("\nEnter the decimal start date (%4.2f to %4.0f): ",minyr, maxyr);
-                  safegets(inbuff, MAXREAD);
-                  sdate=atof(inbuff);
-                } 
-              else 
-                {
-                  while ((isyear>(int)maxyr)||(isyear<(int)minyr))
-                    {
-                      ismonth=isday=isyear=0;
-                      printf("\nEnter the start date (%4.2f to %4.2f)\n ", minyr, maxyr);
-                      printf("\n   Year (%d to %d): ",(int)minyr,(int)(maxyr));
-                      safegets(inbuff, MAXREAD);
-                      isyear=atoi(inbuff);
-                    }            
-                  while ((ismonth>12)||(ismonth<1))
-                    {
-                      printf("\n   Month (1-12): ");
-                      safegets(inbuff, MAXREAD);
-                      ismonth=atoi(inbuff);
-                    }            
-                  while ((isday>31)||(isday<1))
-                    {
-                      printf("\n   Day (1-31): ");
-                      safegets(inbuff, MAXREAD);
-                      isday=atoi(inbuff);
-                    }
-                  
-                  sdate = julday(ismonth,isday,isyear);
-                  
-                  if ((sdate<minyr)||(sdate>maxyr))
-                    {
-                      printf("\nThe start date %4.2f is out of range.\n", sdate);
-                    }
-                }
-            } /* WHILE ((sdate<minyr)||(sdate>maxyr)) */
-          
-          while ((edate<=sdate)||(edate>maxyr+1))
-            {          
-              if (decyears==1)
-                {
-                  printf("\nEnter the decimal end date (%4.2f to %4.0f): ",sdate, maxyr);
-                  safegets(inbuff, MAXREAD);
-                  edate=atof(inbuff);
-                } 
-              else 
-                {
-                  while ((ieyear>(int)maxyr)||(ieyear<(int)sdate))
-                    {
-                      iemonth=ieday=ieyear=0;
-                      printf("\nEnter the end date (%4.2f to %4.0f)\n ", sdate, maxyr);
-                      printf("\n   Year (%d to %d): ",(int)sdate,(int)(maxyr));
-                      safegets(inbuff, MAXREAD);
-                      ieyear=atoi(inbuff);
-                    }
-                  
-                  while ((iemonth>12)||(iemonth<1))
-                    {
-                      printf("\n   Month (1-12): ");
-                      safegets(inbuff, MAXREAD);
-                      iemonth=atoi(inbuff);
-                    }
-                  
-                  while ((ieday>31)||(ieday<1))
-                    {
-                      printf("\n   Day (1-31): ");
-                      safegets(inbuff, MAXREAD);
-                      ieday=atoi(inbuff);
-                    }
-                  
-                  edate = julday(iemonth,ieday,ieyear);
-                  
-                }
-              
-              if ((edate<sdate)||(edate>maxyr+1))
-                {
-                  printf("\nThe date %4.2f is out of range.\n", edate);
-                }
-              
-              if (edate>maxyr && edate<=maxyr+1)
-                {
-                  printf("\nWarning: The end date %4.2f is out of range,\n", edate);
-                  printf("         but still within one year of model expiration date.\n");
-                  printf("         An updated model file is available before 1.1.%4.0f\n",maxyr);
-                }
-            } /* while ((edate<=sdate)||(edate>maxyr+1)) */
-        
-          while ((step<=0)||(step>(edate-sdate)))
-            {
-              printf("\nEnter the step size in years. (0 to %4.2f): ",edate-sdate);
-              safegets(inbuff, MAXREAD);
-              step=atof(inbuff);
-            }
-          
-        } /* if (range == 2) */
-      
       
       /* Pick model */
       for (modelI=0; modelI<nmodel; modelI++)
@@ -859,16 +687,6 @@ int main(int argc, char**argv)
       if (!arg_err && (igdgc != 1 && igdgc != 2))
           {printf("\nError: unrecognized coordinate system %s in coordinate file line %1d\n\n",args[3],iline); arg_err = 1;} 
 
-      while ((igdgc!=1)&&(igdgc!=2))
-        {
-          printf("\n\nEnter Coordinate Preferences:");
-          printf("\n    1) Geodetic (WGS84 latitude and altitude above mean sea level)");
-          printf("\n    2) Geocentric (spherical, altitude relative to Earth's center)\n");
-          printf("\n                            ==> ");
-          safegets(inbuff, MAXREAD);
-          igdgc=atoi(inbuff);
-        }
-      
       /* If needed modify ranges to reflect coords. */
       if (igdgc==2)
         {
@@ -881,17 +699,6 @@ int main(int argc, char**argv)
         {
           if (!arg_err && (units > 3 || units < 1))
             {printf("\nError: unrecognized altitude units %s in coordinate file line %1d\n\n",args[4],iline); arg_err = 1;} 
-
-          while ((units>3)||(units<1))
-            {
-              printf("\n\nEnter Unit Preferences:");
-              printf("\n       1) Kilometers");
-              printf("\n       2) Meters");
-              printf("\n       3) Feet\n");
-              printf("\n                            ==> ");
-              safegets(inbuff, MAXREAD);
-              units=atoi(inbuff);
-            }
         }
       else units = 1; /* geocentric always in km */
       
@@ -912,16 +719,6 @@ int main(int argc, char**argv)
       if (!arg_err && (alt < minalt || alt > maxalt))
         {printf("\nError: unrecognized altitude %s in coordinate file line %1d\n\n",args[4],iline); arg_err = 1;} 
 
-      while ((alt<minalt)||(alt>maxalt))
-        {
-          if (igdgc==2) printf("\n\nEnter geocentric altitude in km (%.2f to %.2f): ", minalt, maxalt);
-          if (igdgc==1 && units==1) printf("\n\nEnter geodetic altitude above mean sea level in km (%.2f to %.2f): ", minalt, maxalt);
-          if (igdgc==1 && units==2) printf("\n\nEnter geodetic altitude above mean sea level in meters (%.2f to %.2f): ", minalt, maxalt);
-          if (igdgc==1 && units==3) printf("\n\nEnter geodetic altitude above mean sea level in feet (%.2f to %.2f): ", minalt, maxalt);
-          safegets(inbuff, MAXREAD);
-          alt=atof(inbuff);
-        }
-      
       /* Convert altitude to km */
       if (units==2)
         {
@@ -937,17 +734,6 @@ int main(int argc, char**argv)
       if (!arg_err && (decdeg != 1 && decdeg != 2))
         {printf("\nError: unrecognized lat %s or lon %s in coordinate file line %1d\n\n",args[5],args[6],iline); arg_err = 1;}
 
-      while ((decdeg!=1)&&(decdeg!=2))
-        {
-          printf("\n\nHow would you like to enter the latitude and longitude?:");
-          printf("\n       1) In decimal degrees.");
-          printf("\n       2) In degrees, minutes, and seconds.\n");
-          printf("\n                            ==> ");
-          safegets(inbuff, MAXREAD);
-          decdeg=atoi(inbuff);
-        }
-      
-      
       /* Get lat/lon */
       
       if (decdeg==1)
@@ -955,22 +741,8 @@ int main(int argc, char**argv)
           if (!arg_err && (latitude < -90 || latitude > 90))
             {printf("\nError: unrecognized latitude %s in coordinate file line %1d\n\n",args[6],iline); arg_err = 1;} 
 
-          while ((latitude<-90)||(latitude>90))
-            {
-              printf("\n\nEnter the decimal latitude (-90 to 90) (- for Southern hemisphere).\n");
-              safegets(inbuff, MAXREAD);
-              latitude=atof(inbuff);
-            }
-
           if (!arg_err && (longitude < -180 || longitude > 180))
             {printf("\nError: unrecognized longitude %s in coordinate file line %1d\n\n",args[6],iline); arg_err = 1;} 
-
-          while ((longitude<-180)||(longitude>180))
-            {
-              printf("\n\nEnter the decimal longitude (-180 to 180) (- for Western hemisphere).\n");
-              safegets(inbuff, MAXREAD);
-              longitude=atof(inbuff);
-            }
         } /* if (decdeg==1) */
       else 
         {
@@ -979,71 +751,10 @@ int main(int argc, char**argv)
 
           if (!arg_err && (latitude < -90 || latitude > 90))
             {printf("\nError: unrecognized latitude %s in coordinate file line %1d\n\n",args[6],iline); arg_err = 1;} 
-
-          while ((latitude<-90)||(latitude>90))
-            {
-              ilat_deg=ilat_min=ilat_sec=200;
-              printf("\n\nEnter the decimal latitude (-90 to 90) (- for Southern hemisphere).\n");
-              while ((ilat_deg<-90)||(ilat_deg>90))
-                {
-                  printf("\nDegrees (-90 to 90): ");
-                  safegets(inbuff, MAXREAD);
-                  ilat_deg=atoi(inbuff);
-                }
-              while ((ilat_min<-59)||(ilat_min>59))
-                {
-                  printf("\nMinutes (-59 to 59): ");
-                  safegets(inbuff, MAXREAD);
-                  ilat_min=atoi(inbuff);
-                }
-              while ((ilat_sec<-59)||(ilat_sec>59))
-                {
-                  printf("\nSeconds (-59 to 59): ");
-                  safegets(inbuff, MAXREAD);
-                  ilat_sec=atoi(inbuff);
-                }
-              
-              latitude=degrees_to_decimal(ilat_deg,ilat_min,ilat_sec);
-              
-              if ((latitude<-90)||(latitude>90))
-                {
-                  printf("\nThe latitude %3.2f is out of range", latitude);
-                }
-            } /* while ((latitude<-90)||(latitude>90)) */
           
           if (!arg_err && (longitude < -180 || longitude > 180))
             {printf("\nError: unrecognized longitude %s in coordinate file line %1d\n\n",args[6],iline); arg_err = 1;} 
 
-          while ((longitude<-180)||(longitude>180))
-            {
-              ilon_deg=ilon_min=ilon_sec=200;
-              printf("\n\nEnter the decimal longitude (-180 to 180) (- for Western hemisphere).\n");
-              while ((ilon_deg<-180)||(ilon_deg>180))
-                {
-                  printf("\nDegrees (-180 to 180): ");
-                  safegets(inbuff, MAXREAD);
-                  ilon_deg=atoi(inbuff);
-                }
-              while ((ilon_min<-59)||(ilon_min>59))
-                {
-                  printf("\nMinutes (0 to 59): ");
-                  safegets(inbuff, MAXREAD);
-                  ilon_min=atoi(inbuff);
-                }
-              while ((ilon_sec<-59)||(ilon_sec>59))
-                {
-                  printf("\nSeconds (0 to 59): ");
-                  safegets(inbuff, MAXREAD);
-                  ilon_sec=atoi(inbuff);
-                }
-              
-              longitude=degrees_to_decimal(ilon_deg,ilon_min,ilon_sec);
-              
-              if ((longitude<-180)||(longitude>180))
-                {
-                  printf("\nThe longitude %3.2f is out of range", longitude);
-                }
-            } /* while ((longitude<-180)||(longitude>180)) */
         } /* if (decdeg != 1) */
                   
       /** This will compute everything needed for 1 point in time. **/
@@ -1272,43 +983,6 @@ void print_result_file(FILE *outf, double d, double i, double h, double x, doubl
     fprintf(outf," %7.1f   %7.1f     %8.1f %8.1f %8.1f %8.1f %8.1f\n",ddot,idot,hdot,xdot,ydot,zdot,fdot);
   return;
 } /* print_result_file */
-
-
-/****************************************************************************/
-/*                                                                          */
-/*                       Subroutine safegets                                */
-/*                                                                          */
-/****************************************************************************/
-/*                                                                          */
-/*  Gets characters from stdin untill it has reached n characters or \n,    */
-/*     whichever comes first.  \n is converted to \0.                       */
-/*                                                                          */
-/*  Input: n - Integer number of chars                                      */
-/*         *buffer - Character array ptr which can contain n+1 characters   */
-/*                                                                          */
-/*  Output: size - integer size of sting in buffer                          */
-/*                                                                          */
-/*  Note: All strings will be null terminated.                              */
-/*                                                                          */
-/*  By: David Owens                                                         */
-/*      dio@ngdc.noaa.gov                                                   */
-/****************************************************************************/
-
-int safegets(char *buffer,int n){
-  char *ptr;                    /** ptr used for finding '\n' **/
-  
-  buffer[0] = '\0';
-  fgets(buffer,n,stdin);        /** Get n chars **/
-  buffer[n+1]='\0';             /** Set last char to null **/
-  ptr=strchr(buffer,'\n');      /** If string contains '\n' **/
-  if (ptr!=NULL){                /** If string contains '\n' **/
-    ptr[0]='\0';               /** Change char to '\0' **/
-    if (buffer[0] == '\0') printf("\n ... no entry ...\n");
-  }
-  
-  return strlen(buffer);        /** Return the length **/
-}
-
 
 /****************************************************************************/
 /*                                                                          */
