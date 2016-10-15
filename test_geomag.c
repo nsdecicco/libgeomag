@@ -31,21 +31,21 @@
 
 #define NUM_VARIABLES 14
 
-#define DEF_VAR(x) double x[N_LAT][N_LON];
+#define DEF_VAR(x) double x[N_LON][N_LAT];
 #define DEFINE_VARIABLES LIST_VARIABLES(DEF_VAR)
 
 #define DEF_NC_VAR(x) int x ## _var;
 #define DEFINE_NC_VARS LIST_VARIABLES(DEF_NC_VAR)
 
-#define LAT_DIM 0
-#define LON_DIM 1
+#define LON_DIM 0
+#define LAT_DIM 1
 
 #define TRYNC(x) if ((status = (x)) != NC_NOERR) goto ncErr;
 
 int main()
 {
 	BFieldModel model;
-	BField bfield[N_LAT][N_LON];
+	BField bfield[N_LON][N_LAT];
 
 	// Define arrays for each variable
 	DEFINE_VARIABLES
@@ -72,14 +72,14 @@ int main()
 	}
 
 #define COPY_VAR(x) \
-	x[ii][ij] = bfield[ii][ij].x;
+	x[ij][ii] = bfield[ij][ii].x;
 
 	for (ii = 0; ii < N_LAT; ii++) {
 		for (ij = 0; ij < N_LON; ij++) {
 			lat[ii] = -90.0 + epsilon +
 			          ((double) ii)/((double) (N_LAT-1))*(180.0 - 2.0*epsilon);
 			lon[ij] = -180.0 + ((double) ij)/((double) (N_LON-1))*360.0;
-			get_field_components(bfield[ii]+ij, &model, alt, kUnitsKilometers,
+			get_field_components(bfield[ij]+ii, &model, alt, kUnitsKilometers,
 			                     kCoordSysGeodetic, lat[ii], lon[ij], date,
 			                     "IGRF12.COF");
 			LIST_VARIABLES(COPY_VAR);

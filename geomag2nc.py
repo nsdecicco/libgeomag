@@ -61,8 +61,8 @@ regex = r"\s+".join([r"(\d+),(\d+),(\d+)", # Date
                      n,                    # dZ/dt
                      n                     # dF/dt
                      ]) + '.*'
-variables = ['H', 'X', 'Y', 'Z', 'F',
-             'dDdt', 'dIdt', 'dHdt', 'dXdt', 'dYdt', 'dZdt', 'dFdt']
+variables = ['h', 'x', 'y', 'z', 'f',
+             'ddot', 'idot', 'hdot', 'xdot', 'ydot', 'zdot', 'fdot']
 data = fromregex('out.txt', regex, dtype=[('year', int), ('month', int), ('day', int),
                                           ('lat', float), ('lon', float),
                                           ('D_deg', float), ('D_min', float),
@@ -83,8 +83,8 @@ try:
     lat[:] = latValues
     lon[:] = lonValues
 
-    D = out.createVariable('D', 'f8', ('lon', 'lat'))
-    I = out.createVariable('I', 'f8', ('lon', 'lat'))
+    D = out.createVariable('d', 'f8', ('lon', 'lat'))
+    I = out.createVariable('i', 'f8', ('lon', 'lat'))
 
     D[:] = data['D_deg'] + data['D_min']/60.0
     I[:] = data['I_deg'] + data['I_min']/60.0
