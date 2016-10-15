@@ -107,6 +107,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include "geomag.h"
 
 int my_isnan(double d)
 {
@@ -121,27 +122,16 @@ int my_isnan(double d)
 
 #ifndef SEEK_SET
 #define SEEK_SET 0
-#define SEEK_CUR 1
-#define SEEK_END 2
 #endif
 
 #define IEXT 0
-#define FALSE 0
-#define TRUE 1                  /* constants */
 #define RECL 81
 
-#define MAXINBUFF RECL+14
+#define MAXINBUFF RECL+14 /** Max size of in buffer */
 
-/** Max size of in buffer **/
+#define MAXREAD MAXINBUFF-2 /** Max to read 2 less than total size (just to be safe) */
 
-#define MAXREAD MAXINBUFF-2
-/** Max to read 2 less than total size (just to be safe) **/
-
-#define MAXMOD 30
-/** Max number of models in a file **/
-
-#define PATH MAXREAD
-/** Max path and filename length **/
+#define PATH MAXREAD /** Max path and filename length */
 
 #define EXT_COEFF1 (double)0
 #define EXT_COEFF2 (double)0
@@ -153,10 +143,6 @@ double gh1[MAXCOEFF]; /** Schmidt quasi-normal internal spherical harmonic coeff
 double gh2[MAXCOEFF]; /** Schmidt quasi-normal internal spherical harmonic coeff. */
 double gha[MAXCOEFF]; /** Coefficients of resulting model. */
 double ghb[MAXCOEFF]; /** Coefficients of rate of change model. */
-//double d=0,f=0,h=0,i=0;
-//double dtemp,ftemp,htemp,itemp;
-//double x=0,y=0,z=0;
-//double xtemp,ytemp,ztemp;
 
 /*
  *
@@ -200,60 +186,16 @@ double ghb[MAXCOEFF]; /** Coefficients of rate of change model. */
  *
  */
 
-typedef enum {
-	kUnitsKilometers = 1,
-	kUnitsMeters     = 2,
-	kUnitsFeet       = 3
-} Units;
-
-typedef enum {
-	kCoordSysGeodetic, /* WGS-84 */
-	kCoordSysGeocentric
-} CoordinateSystem;
-
-typedef struct {
-	double d;    /** Declination of the field from the
-	                 geographic north (deg). */
-	double i;    /** Inclination of the field (deg). */
-	double h;    /** */
-	double f;    /** Total field intensity. */
-	double x;    /** */
-	double y;    /** */
-	double z;    /** */
-	double ddot; /** Annual rate of change of declination. (arc-min/yr) */
-	double fdot; /** Annual rate of change of . */
-	double hdot; /** Annual rate of change of . */
-	double idot; /** Annual rate of change of inclination. (arc-min/yr). */
-	double xdot; /** Annual rate of change of . */
-	double ydot; /** Annual rate of change of . */
-	double zdot; /** Annual rate of change of . */
-} BField;
-
-typedef struct {
-	char name[MAXMOD][9];
-	double epoch[MAXMOD];  /** epoch of model. */
-	double yrmin[MAXMOD];  /** Min year of model. */
-	double yrmax[MAXMOD];  /** Max year of model. */
-	double minyr;          /** Min year of all models. */
-	double maxyr;          /** Max year of all models. */
-	double altmin[MAXMOD]; /** Minimum height of each model. */
-	double altmax[MAXMOD]; /** Maximum height of each model. */
-	int nmodel;            /** Number of models in file */
-	int max1[MAXMOD];      /** Main field coefficient. */
-	int max2[MAXMOD];      /** Secular variation coefficient. */
-	int max3[MAXMOD];      /** Acceleration coefficient. */
-	long irec_pos[MAXMOD]; /** Record counter for header */
-} BFieldModel;
-
-double julday(const int month, const int day, const int year);
-int interpsh(const double date, double dte1, int nmax1, double dte2, int nmax2,
+static int interpsh(const double date, double dte1, int nmax1, double dte2, int nmax2,
              const int gh);
-int extrapsh(double date, double dte1, int nmax1, int nmax2, int gh);
-int shval3();
-int dihf(const int gh, const double x, const double y, const double z,
+static int extrapsh(double date, double dte1, int nmax1, int nmax2, int gh);
+static int shval3(const CoordinateSystem coordSys, double flat, double flon,
+           const double elev, const int nmax, const int gh,
+           int iext, double ext1, double ext2, double ext3,
+           double *const x, double *const y, double *const z);
+static int dihf(const int gh, const double x, const double y, const double z,
          double *const d, double *const i, double *const h, double *const f);
-int getshc();
-int read_model(BFieldModel *const model, const char mdfile[]);
+static int getshc(const char file[PATH], int iflag, long int strec, int nmax_of_gh, int gh);
 
 /**
  * @param alt Altitude, in units specified by altUnits.
@@ -589,7 +531,7 @@ double julday(const int month, const int day, const int year)
  *           August 15, 1988
  *
  */
-int getshc(char file[PATH], int iflag, long int strec, int nmax_of_gh, int gh)
+static int getshc(const char file[PATH], int iflag, long int strec, int nmax_of_gh, int gh)
 {
 	char inbuff[MAXINBUFF];
 	char irat[9];
@@ -663,7 +605,6 @@ int getshc(char file[PATH], int iflag, long int strec, int nmax_of_gh, int gh)
 	return 1;
 }
 
-
 /**
  * Extrapolates linearly a spherical harmonic model with a rate-of-change
  * model.
@@ -691,7 +632,7 @@ int getshc(char file[PATH], int iflag, long int strec, int nmax_of_gh, int gh)
  *           August 16, 1988
  *
  */
-int extrapsh(double date, double dte1, int nmax1, int nmax2, int gh)
+static int extrapsh(double date, double dte1, int nmax1, int nmax2, int gh)
 {
 	int    nmax;
 	int    k, l;
@@ -787,8 +728,8 @@ int extrapsh(double date, double dte1, int nmax1, int nmax2, int gh)
  *         Lockheed Missiles and Space Company, Sunnyvale CA
  *         August 17, 1988
  */
-int interpsh(const double date, double dte1, int nmax1, double dte2, int nmax2,
-             const int gh)
+static int interpsh(const double date, double dte1, int nmax1, double dte2,
+                    int nmax2, const int gh)
 {
 	int   nmax;
 	int   k, l;
@@ -906,10 +847,10 @@ int interpsh(const double date, double dte1, int nmax1, double dte2, int nmax2,
  * @param y Output eastward component
  * @param z Output vertically-downward component
  */
-int shval3(const CoordinateSystem coordSys, double flat, double flon,
-           const double elev, const int nmax, const int gh,
-           int iext, double ext1, double ext2, double ext3,
-           double *const x, double *const y, double *const z)
+static int shval3(const CoordinateSystem coordSys, double flat, double flon,
+                  const double elev, const int nmax, const int gh,
+                  int iext, double ext1, double ext2, double ext3,
+                  double *const x, double *const y, double *const z)
 {
 	double earths_radius = 6371.2;
 	double dtr = 0.01745329;
@@ -1111,8 +1052,8 @@ int shval3(const CoordinateSystem coordSys, double flat, double flon,
  *         <deciccon0@students.rowan.edu>
  *         <nsd.cicco@gmail.com>
  */
-int dihf(const int gh, const double x, const double y, const double z,
-         double *const d, double *const i, double *const h, double *const f)
+static int dihf(const int gh, const double x, const double y, const double z,
+                double *const d, double *const i, double *const h, double *const f)
 {
 	int ios;
 	int j;

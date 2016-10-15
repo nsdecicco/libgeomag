@@ -13,7 +13,9 @@ SHARED_LIB = libgeomag.so.1.0.0
 
 OBJS = geomag.o
 
-all: $(STATIC_LIB) #$(SHARED_LIB)
+UNIT_TESTS = test_geomag
+
+all: $(UNIT_TESTS) $(STATIC_LIB) #$(SHARED_LIB)
 
 $(OBJS): %.o : %.c
 	$(CC) -fPIC $(CFLAGS) -c $< -o $@
@@ -24,5 +26,8 @@ $(STATIC_LIB): $(OBJS)
 $(SHARED_LIB): $(OBJS)
 	$(CC) -shared -Wl,-soname,libgeomag.so.1 -o $@ $<
 
+$(UNIT_TESTS): % : %.c $(STATIC_LIB)
+	$(CC) -L. $(CFLAGS) $< -Bstatic -lgeomag -Bdynamic $(LIBS) -o $@
+
 clean:
-	-rm $(OBJS) $(SHARED_LIB) $(STATIC_LIB)
+	-rm $(UNIT_TESTS) $(OBJS) $(SHARED_LIB) $(STATIC_LIB)
