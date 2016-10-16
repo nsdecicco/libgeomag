@@ -80,8 +80,7 @@ int main()
 			          ((double) ii)/((double) (N_LAT-1))*(180.0 - 2.0*epsilon);
 			lon[ij] = -180.0 + ((double) ij)/((double) (N_LON-1))*360.0;
 			get_field_components(bfield[ij]+ii, &model, alt, kUnitsKilometers,
-			                     kCoordSysGeodetic, lat[ii], lon[ij], date,
-			                     "IGRF12.COF");
+			                     kCoordSysGeodetic, lat[ii], lon[ij], date);
 			LIST_VARIABLES(COPY_VAR);
 		}
 	}

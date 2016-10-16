@@ -137,13 +137,6 @@ int my_isnan(double d)
 #define EXT_COEFF2 (double)0
 #define EXT_COEFF3 (double)0
 
-#define MAXDEG 13
-#define MAXCOEFF (MAXDEG*(MAXDEG+2)+1) /* index starts with 1!, (from old Fortran?) */
-double gh1[MAXCOEFF]; /** Schmidt quasi-normal internal spherical harmonic coeff. */
-double gh2[MAXCOEFF]; /** Schmidt quasi-normal internal spherical harmonic coeff. */
-double gha[MAXCOEFF]; /** Coefficients of resulting model. */
-double ghb[MAXCOEFF]; /** Coefficients of rate of change model. */
-
 /*
  *
  *                             Program Geomag
@@ -187,16 +180,22 @@ double ghb[MAXCOEFF]; /** Coefficients of rate of change model. */
  */
 
 static int interpsh(const double date, double dte1, int nmax1, double dte2, int nmax2,
-             const int gh);
-static int extrapsh(double date, double dte1, int nmax1, int nmax2, int gh);
+                    const int gh,
+			        const double gh1[MAXCOEFF], const double gh2[MAXCOEFF],
+			        double gha[MAXCOEFF], double ghb[MAXCOEFF]);
+static int extrapsh(double date, double dte1, int nmax1, int nmax2, int gh,
+			        const double gh1[MAXCOEFF], const double gh2[MAXCOEFF],
+			        double gha[MAXCOEFF], double ghb[MAXCOEFF]);
 static int shval3(const CoordinateSystem coordSys, double flat, double flon,
-           const double elev, const int nmax, const int gh,
-           int iext, double ext1, double ext2, double ext3,
-           double *const x, double *const y, double *const z);
+                  const double elev, const int nmax, const int gh,
+                  int iext, double ext1, double ext2, double ext3,
+                  const double gha[MAXCOEFF], const double ghb[MAXCOEFF],
+                  double *const x, double *const y, double *const z);
 static void dihf(const double x, const double y, const double z,
                  double *const d, double *const i, double *const h, double *const f);
-static int getshc(const char file[PATH], int iflag, long int strec,
-                  int nmax_of_gh, const int gh);
+static int getshc(FILE *stream, int iflag, long int strec,
+                  int nmax_of_gh, const int gh,
+                  double gh1[MAXCOEFF], double gh2[MAXCOEFF]);
 
 /**
  * @param alt Altitude, in units specified by altUnits.
@@ -213,8 +212,7 @@ int get_field_components(BField *const bfield,
                          const CoordinateSystem coordSys,
                          const double latitude,
                          const double longitude,
-                         const double sdate,
-                         const char mdfile[])
+                         const double sdate)
 {
 	int warn_H, warn_H_strong, warn_P;
 
@@ -234,6 +232,9 @@ int get_field_components(BField *const bfield,
 
 	double dtemp = 0.0, ftemp = 0.0, htemp = 0.0, itemp = 0.0;
 	double xtemp = 0.0, ytemp = 0.0, ztemp = 0.0;
+
+	double gha[MAXCOEFF]; /* Coefficients of resulting model. */
+	double ghb[MAXCOEFF]; /* Coefficients of rate of change model. */
 
 	/* Warn if the date is past end of validity. */
 	if ((sdate > model->maxyr) && (sdate < model->maxyr + 1)) {
@@ -310,29 +311,28 @@ int get_field_components(BField *const bfield,
 		return 0;
 	}
 
-	// TODO/FIXME: make it so that getshc() doesn't have to read
 	if (model->max2[modelI] == 0) {
-		getshc(mdfile, 1, model->irec_pos[modelI], model->max1[modelI], 1);
-		getshc(mdfile, 1, model->irec_pos[modelI+1], model->max1[modelI+1], 2);
 		nmax = interpsh(sdate, model->yrmin[modelI], model->max1[modelI],
-		                       model->yrmin[modelI+1], model->max1[modelI+1], 3);
+						model->yrmin[modelI+1], model->max1[modelI+1], 3,
+						model->gh1[modelI], model->gh2[modelI], gha, ghb);
 		nmax = interpsh(sdate+1, model->yrmin[modelI] , model->max1[modelI],
-		                         model->yrmin[modelI+1], model->max1[modelI+1],4);
+						model->yrmin[modelI+1], model->max1[modelI+1], 4,
+						model->gh1[modelI], model->gh2[modelI], gha, ghb);
 	} else {
-		getshc(mdfile, 1, model->irec_pos[modelI], model->max1[modelI], 1);
-		getshc(mdfile, 0, model->irec_pos[modelI], model->max2[modelI], 2);
-		nmax = extrapsh(sdate, model->epoch[modelI], model->max1[modelI], model->max2[modelI], 3);
-		nmax = extrapsh(sdate+1, model->epoch[modelI], model->max1[modelI], model->max2[modelI], 4);
+		nmax = extrapsh(sdate, model->epoch[modelI], model->max1[modelI], model->max2[modelI], 3,
+						model->gh1[modelI], model->gh2[modelI], gha, ghb);
+		nmax = extrapsh(sdate+1, model->epoch[modelI], model->max1[modelI], model->max2[modelI], 4,
+						model->gh1[modelI], model->gh2[modelI], gha, ghb);
 	}
 
 	/* Do the first calculations */
 	shval3(coordSys, latitude, longitude, alt, nmax, 3,
-	       IEXT, EXT_COEFF1, EXT_COEFF2, EXT_COEFF3,
+	       IEXT, EXT_COEFF1, EXT_COEFF2, EXT_COEFF3, gha, ghb,
 	       &(bfield->x), &(bfield->y), &(bfield->z));
 	dihf(bfield->x, bfield->y, bfield->z,
 	     &(bfield->d), &(bfield->i), &(bfield->h), &(bfield->f));
 	shval3(coordSys, latitude, longitude, alt, nmax, 4,
-	       IEXT, EXT_COEFF1, EXT_COEFF2, EXT_COEFF3,
+	       IEXT, EXT_COEFF1, EXT_COEFF2, EXT_COEFF3, gha, ghb,
 	       &xtemp, &ytemp, &ztemp);
 	dihf(xtemp, ytemp, ztemp, &dtemp, &itemp, &htemp, &ftemp);
 
@@ -474,6 +474,21 @@ int read_model(BFieldModel *const model, const char mdfile[])
 	}
 
 	model->nmodel = modelI + 1;
+
+	for (modelI = 1; modelI < model->nmodel; modelI++) {
+		if (model->max2[modelI] == 0) {
+			getshc(stream, 1, model->irec_pos[modelI], model->max1[modelI], 1,
+			       model->gh1[modelI], model->gh2[modelI]);
+			getshc(stream, 1, model->irec_pos[modelI+1], model->max1[modelI+1], 2,
+			       model->gh1[modelI], model->gh2[modelI]);
+		} else {
+			getshc(stream, 1, model->irec_pos[modelI], model->max1[modelI], 1,
+			       model->gh1[modelI], model->gh2[modelI]);
+			getshc(stream, 0, model->irec_pos[modelI], model->max2[modelI], 2,
+			       model->gh1[modelI], model->gh2[modelI]);
+		}
+	}
+
 	fclose(stream);
 
 	return 1;
@@ -531,8 +546,10 @@ double julday(const int month, const int day, const int year)
  *           August 15, 1988
  *
  */
-static int getshc(const char file[PATH], int iflag, long int strec,
-                  int nmax_of_gh, const int gh)
+static int getshc(FILE *stream, int iflag, long int strec,
+                  int nmax_of_gh, const int gh,
+                  double gh1[MAXCOEFF],
+                  double gh2[MAXCOEFF])
 {
 	char inbuff[MAXINBUFF];
 	char irat[9];
@@ -540,15 +557,9 @@ static int getshc(const char file[PATH], int iflag, long int strec,
 	int line_num;
 	double g,hh;
 	double trash;
-	FILE *stream;
 
 	if (!(gh == 1 || gh == 2)) {
 		fprintf(stderr, "getshc: Fatal: argument gh may only be 1 or 2\n");
-		return 0;
-	}
-
-	if (!(stream = fopen(file, "rt"))) {
-		fprintf(stderr, "\nError on opening file %s", file);
 		return 0;
 	}
 
@@ -599,7 +610,6 @@ static int getshc(const char file[PATH], int iflag, long int strec,
 		}
 	}
 
-	fclose(stream);
 	return 1;
 }
 
@@ -630,7 +640,9 @@ static int getshc(const char file[PATH], int iflag, long int strec,
  *           August 16, 1988
  *
  */
-static int extrapsh(double date, double dte1, int nmax1, int nmax2, int gh)
+static int extrapsh(double date, double dte1, int nmax1, int nmax2, int gh,
+                    const double gh1[MAXCOEFF], const double gh2[MAXCOEFF],
+                    double gha[MAXCOEFF], double ghb[MAXCOEFF])
 {
 	int    nmax;
 	int    k, l;
@@ -727,7 +739,9 @@ static int extrapsh(double date, double dte1, int nmax1, int nmax2, int gh)
  *         August 17, 1988
  */
 static int interpsh(const double date, double dte1, int nmax1, double dte2,
-                    int nmax2, const int gh)
+                    int nmax2, const int gh,
+                    const double gh1[MAXCOEFF], const double gh2[MAXCOEFF],
+                    double gha[MAXCOEFF], double ghb[MAXCOEFF])
 {
 	int   nmax;
 	int   k, l;
@@ -848,6 +862,7 @@ static int interpsh(const double date, double dte1, int nmax1, double dte2,
 static int shval3(const CoordinateSystem coordSys, double flat, double flon,
                   const double elev, const int nmax, const int gh,
                   int iext, double ext1, double ext2, double ext3,
+                  const double gha[MAXCOEFF], const double ghb[MAXCOEFF],
                   double *const x, double *const y, double *const z)
 {
 	double earths_radius = 6371.2;

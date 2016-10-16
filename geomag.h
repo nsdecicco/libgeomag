@@ -37,6 +37,9 @@ typedef struct {
 	double zdot; /** Annual rate of change of . */
 } BField;
 
+#define MAXDEG 13
+#define MAXCOEFF (MAXDEG*(MAXDEG+2)+1) /* index starts with 1!, (from old Fortran?) */
+
 typedef struct {
 	char name[MAXMOD][9];
 	double epoch[MAXMOD];  /** epoch of model. */
@@ -51,6 +54,8 @@ typedef struct {
 	int max2[MAXMOD];      /** Secular variation coefficient. */
 	int max3[MAXMOD];      /** Acceleration coefficient. */
 	long irec_pos[MAXMOD]; /** Record counter for header */
+	double gh1[MAXMOD][MAXCOEFF]; /** Schmidt quasi-normal internal spherical harmonic coeff. */
+	double gh2[MAXMOD][MAXCOEFF]; /** Schmidt quasi-normal internal spherical harmonic coeff. */
 } BFieldModel;
 
 int get_field_components(BField *const bfield,
@@ -60,8 +65,7 @@ int get_field_components(BField *const bfield,
                          const CoordinateSystem coordSys,
                          const double latitude,
                          const double longitude,
-                         const double sdate,
-                         const char mdfile[]);
+                         const double sdate);
 
 double julday(const int month, const int day, const int year);
 int read_model(BFieldModel *const model, const char mdfile[]);
