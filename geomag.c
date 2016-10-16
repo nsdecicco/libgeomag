@@ -195,7 +195,8 @@ static int shval3(const CoordinateSystem coordSys, double flat, double flon,
            double *const x, double *const y, double *const z);
 static void dihf(const double x, const double y, const double z,
                  double *const d, double *const i, double *const h, double *const f);
-static int getshc(const char file[PATH], int iflag, long int strec, int nmax_of_gh, int gh);
+static int getshc(const char file[PATH], int iflag, long int strec,
+                  int nmax_of_gh, const int gh);
 
 /**
  * @param alt Altitude, in units specified by altUnits.
@@ -530,7 +531,8 @@ double julday(const int month, const int day, const int year)
  *           August 15, 1988
  *
  */
-static int getshc(const char file[PATH], int iflag, long int strec, int nmax_of_gh, int gh)
+static int getshc(const char file[PATH], int iflag, long int strec,
+                  int nmax_of_gh, const int gh)
 {
 	char inbuff[MAXINBUFF];
 	char irat[9];
@@ -540,6 +542,11 @@ static int getshc(const char file[PATH], int iflag, long int strec, int nmax_of_
 	double trash;
 	FILE *stream;
 
+	if (!(gh == 1 || gh == 2)) {
+		fprintf(stderr, "getshc: Fatal: argument gh may only be 1 or 2\n");
+		return 0;
+	}
+
 	if (!(stream = fopen(file, "rt"))) {
 		fprintf(stderr, "\nError on opening file %s", file);
 		return 0;
@@ -547,6 +554,7 @@ static int getshc(const char file[PATH], int iflag, long int strec, int nmax_of_
 
 	ii = 0;
 	fseek(stream,strec,SEEK_SET);
+
 	for (nn = 1; nn <= nmax_of_gh; nn++)
 	{
 		for (mm = 0; mm <= nn; mm++)
@@ -563,38 +571,29 @@ static int getshc(const char file[PATH], int iflag, long int strec, int nmax_of_
 				sscanf(inbuff, "%d%d%lg%lg%lg%lg%s%d",
 				       &n, &m, &trash, &trash, &g, &hh, irat, &line_num);
 			}
+
 			if ((nn != n) || (mm != m))
 			{
 				fclose(stream);
 				return 0;
 			}
+
 			ii = ii + 1;
+
 			switch(gh)
 			{
-				case 1:
-					gh1[ii] = g;
-					break;
-				case 2:
-					gh2[ii] = g;
-					break;
-				default:
-					fprintf(stderr, "\nError in subroutine getshc");
-					break;
+				case 1: gh1[ii] = g; break;
+				case 2: gh2[ii] = g; break;
 			}
+
 			if (m != 0)
 			{
 				ii = ii+ 1;
+
 				switch (gh)
 				{
-					case 1:
-						gh1[ii] = hh;
-						break;
-					case 2:
-						gh2[ii] = hh;
-						break;
-					default:
-						fprintf(stderr, "\nError in subroutine getshc");
-						break;
+					case 1: gh1[ii] = hh; break;
+					case 2: gh2[ii] = hh; break;
 				}
 			}
 		}
