@@ -1055,20 +1055,13 @@ static int shval3(const CoordinateSystem coordSys, double flat, double flon,
 static int dihf(const int gh, const double x, const double y, const double z,
                 double *const d, double *const i, double *const h, double *const f)
 {
-	int ios;
 	double sn;
-	double h2;
 	double hpx;
-	double argument, argument2;
 
-	ios = gh;
 	sn = 0.0001;
 
-	h2 = x*x + y*y;
-	argument = h2;
-	*h = sqrt(argument);       /* calculate horizontal intensity */
-	argument = h2 + z*z;
-	*f = sqrt(argument);      /* calculate total intensity */
+	*h = sqrt(x*x + y*y);       /* calculate horizontal intensity */
+	*f = sqrt(x*x + y*y + z*z);      /* calculate total intensity */
 	if (*f < sn)
 	{
 		/* If d and i cannot be determined, set them equal to NaN. */
@@ -1077,9 +1070,7 @@ static int dihf(const int gh, const double x, const double y, const double z,
 	}
 	else
 	{
-		argument = z;
-		argument2 = *h;
-		*i = atan2(argument,argument2);
+		*i = atan2(z, *h);
 		if (*h < sn)
 		{
 			*d = NaN;
@@ -1093,12 +1084,10 @@ static int dihf(const int gh, const double x, const double y, const double z,
 			}
 			else
 			{
-				argument = y;
-				argument2 = hpx;
-				*d = 2.0 * atan2(argument,argument2);
+				*d = 2.0 * atan2(y, hpx);
 			}
 		}
 	}
 
-	return ios;
+	return gh;
 }
