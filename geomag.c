@@ -193,8 +193,8 @@ static int shval3(const CoordinateSystem coordSys, double flat, double flon,
            const double elev, const int nmax, const int gh,
            int iext, double ext1, double ext2, double ext3,
            double *const x, double *const y, double *const z);
-static int dihf(const int gh, const double x, const double y, const double z,
-         double *const d, double *const i, double *const h, double *const f);
+static void dihf(const double x, const double y, const double z,
+                 double *const d, double *const i, double *const h, double *const f);
 static int getshc(const char file[PATH], int iflag, long int strec, int nmax_of_gh, int gh);
 
 /**
@@ -328,13 +328,12 @@ int get_field_components(BField *const bfield,
 	shval3(coordSys, latitude, longitude, alt, nmax, 3,
 	       IEXT, EXT_COEFF1, EXT_COEFF2, EXT_COEFF3,
 	       &(bfield->x), &(bfield->y), &(bfield->z));
-	dihf(3, bfield->x, bfield->y, bfield->z,
+	dihf(bfield->x, bfield->y, bfield->z,
 	     &(bfield->d), &(bfield->i), &(bfield->h), &(bfield->f));
 	shval3(coordSys, latitude, longitude, alt, nmax, 4,
 	       IEXT, EXT_COEFF1, EXT_COEFF2, EXT_COEFF3,
 	       &xtemp, &ytemp, &ztemp);
-	dihf(4, xtemp, ytemp, ztemp,
-	     &dtemp, &itemp, &htemp, &ftemp);
+	dihf(xtemp, ytemp, ztemp, &dtemp, &itemp, &htemp, &ftemp);
 
 	bfield->ddot = ((dtemp - bfield->d)*RAD2DEG);
 	if (bfield->ddot > 180.0) bfield->ddot -= 360.0;
@@ -1029,9 +1028,9 @@ static int shval3(const CoordinateSystem coordSys, double flat, double flon,
 }
 
 /**
- * Computes the geomagnetic d, i, h, and f from x, y, and z.
+ * Computes the geomagnetic declination (d), inclination (i), horizontal field
+ * strength (h), and total field strength (f) from x, y, and z.
  *
- * @param gh
  * @param x Input northward component.
  * @param y Input eastward component.
  * @param z Input vertically-downward component.
@@ -1052,8 +1051,8 @@ static int shval3(const CoordinateSystem coordSys, double flat, double flon,
  *         <deciccon0@students.rowan.edu>
  *         <nsd.cicco@gmail.com>
  */
-static int dihf(const int gh, const double x, const double y, const double z,
-                double *const d, double *const i, double *const h, double *const f)
+static void dihf(const double x, const double y, const double z,
+                 double *const d, double *const i, double *const h, double *const f)
 {
 	double sn;
 	double hpx;
@@ -1088,6 +1087,4 @@ static int dihf(const int gh, const double x, const double y, const double z,
 			}
 		}
 	}
-
-	return gh;
 }
