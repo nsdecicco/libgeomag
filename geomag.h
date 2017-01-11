@@ -2,6 +2,10 @@
 #ifndef GEOMAG_H
 #define GEOMAG_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MAXMOD 30 /** Max number of models in a file */
 
 typedef enum {
@@ -61,5 +65,9 @@ int get_field_components(BField *const bfield,
 
 double julday(const int month, const int day, const int year);
 int read_model(BFieldModel *const model, const char mdfile[]);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif
