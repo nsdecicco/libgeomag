@@ -6,7 +6,8 @@
 extern "C" {
 #endif
 
-#define MAXMOD 30 /** Max number of models in a file */
+/** Max number of models in a file */
+#define MAXMOD 30
 
 typedef enum {
 	kUnitsKilometers = 1,

@@ -127,11 +127,14 @@ int my_isnan(double d)
 #define IEXT 0
 #define RECL 81
 
-#define MAXINBUFF RECL+14 /** Max size of in buffer */
+/** Max size of in buffer */
+#define MAXINBUFF RECL+14
 
-#define MAXREAD MAXINBUFF-2 /** Max to read 2 less than total size (just to be safe) */
+/** Max to read 2 less than total size (just to be safe) */
+#define MAXREAD MAXINBUFF-2
 
-#define PATH MAXREAD /** Max path and filename length */
+/** Max path and filename length */
+#define PATH MAXREAD
 
 #define EXT_COEFF1 (double)0
 #define EXT_COEFF2 (double)0
