@@ -196,9 +196,11 @@ static int shval3(const CoordinateSystem coordSys, double flat, double flon,
                   double *const x, double *const y, double *const z);
 static void dihf(const double x, const double y, const double z,
                  double *const d, double *const i, double *const h, double *const f);
+#ifndef TARGET_EMBEDDED
 static int getshc(FILE *stream, int iflag, long int strec,
                   int nmax_of_gh, const int gh,
                   double gh1[MAXCOEFF], double gh2[MAXCOEFF]);
+#endif
 
 /**
  * @param alt Altitude, in units specified by altUnits.
@@ -391,6 +393,7 @@ int get_field_components(BField *const bfield,
 	return 1;
 }
 
+#ifndef TARGET_EMBEDDED
 /**
  * Reads model coefficients from a file.
  *
@@ -496,6 +499,7 @@ int read_model(BFieldModel *const model, const char mdfile[])
 
 	return 1;
 }
+#endif
 
 /**
  * Computes the decimal day of year from month, day, year.
@@ -525,6 +529,7 @@ double julday(const int month, const int day, const int year)
 	return ((double)year + (day_in_year / (365.0 + leap_year)));
 }
 
+#ifndef TARGET_EMBEDDED
 /**
  * Reads spherical harmonic coefficients from the specified model into an
  * array.
@@ -615,6 +620,7 @@ static int getshc(FILE *stream, int iflag, long int strec,
 
 	return 1;
 }
+#endif
 
 /**
  * Extrapolates linearly a spherical harmonic model with a rate-of-change

@@ -42,9 +42,17 @@
 
 #define TRYNC(x) if ((status = (x)) != NC_NOERR) goto ncErr;
 
+void print_model(BFieldModel const*const model);
+
+#ifdef TEST_EMBEDDED
+extern BFieldModel model;
+#endif
+
 int main()
 {
+#ifndef TEST_EMBEDDED
 	BFieldModel model;
+#endif
 	BField bfield[N_LON][N_LAT];
 
 	// Define arrays for each variable
@@ -66,10 +74,12 @@ int main()
 	double lat[N_LAT], lon[N_LON];
 	int lat_var, lon_var;
 
+#ifndef TEST_EMBEDDED
 	if (!read_model(&model, "IGRF12.COF")) {
 		fprintf(stderr, "Fatal: failed to open coefficient file\n");
 		return 0;
 	}
+#endif
 
 #define COPY_VAR(x) \
 	x[ij][ii] = bfield[ij][ii].x;

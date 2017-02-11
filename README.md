@@ -36,3 +36,28 @@ The output of ncbo may then be inspected visually with ncdump:
     $ ncdump diff.nc
 
 You should find that the contents of the file are very close to zero. (The reason for the error is actually because of truncation of digits in geomag70.exe output, not because of a difference in this code from the original sources.)
+
+# Use in embedded applications
+
+libgeomag now supports easier incorporation into embedded applications.
+
+Build the embedded version of `libgeomag` with:
+
+	$ make test_geomag_embedded
+
+This will build a library `libgeomag-embedded.a` and an executable
+`test_geomag_embedded`. The `test_geomag_embedded` executable does the same
+as `test_geomag`, except it is linked against `libgeomag-embedded.a`.
+This version of the library does not provide `read_model()`; instead, it
+contains a globally defined `BFieldModel` instance (`model`, accessible
+via `extern`) containing IGRF field coefficients. This means that
+`libgeomag-embedded.a` (unlike `libgeomag.a`) has no dependencies on
+C standard I/O functions (e.g., `fopen` and `fread`).
+
+Note that these IGRF field coefficients find their way into the source
+code at compile-time; you must have `IGRF12.COF` present in your source
+directory for compilation of `libgeomag-embedded.a` to work. At compile-
+time, another executable, `print_model`, will be generated, which is run
+to generate a source file `igrf.c`. This file contains the field
+coefficients and is built as part of `libgeomag-embedded.a`.
+

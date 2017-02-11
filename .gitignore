@@ -1,0 +1,6 @@
+IGRF12.COF
+igrf.c
+*.o
+*.a
+*.so
+*.nc

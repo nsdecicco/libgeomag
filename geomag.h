@@ -69,7 +69,10 @@ int get_field_components(BField *const bfield,
                          const double sdate);
 
 double julday(const int month, const int day, const int year);
+
+#ifndef TARGET_EMBEDDED
 int read_model(BFieldModel *const model, const char mdfile[]);
+#endif
 
 #ifdef __cplusplus
 } /* extern "C" */
